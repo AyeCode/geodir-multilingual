@@ -158,6 +158,8 @@ final class GeoDir_Multilingual {
 
         require_once( GEODIR_MULTILINGUAL_PLUGIN_DIR . 'includes/functions.php' );
 
+		GeoDir_Multilingual_WPML::init();
+
         if ( $this->is_request( 'admin' ) || $this->is_request( 'test' ) || $this->is_request( 'cli' ) ) {
             new GeoDir_Multilingual_Admin();
 
@@ -173,11 +175,6 @@ final class GeoDir_Multilingual {
      */
     private function init_hooks() {
         add_action( 'init', array( $this, 'init' ), 0 );
-
-		add_action( 'plugins_loaded', 'geodir_wpml_ajax_set_guest_lang', -1 );
-		add_filter( 'plugins_loaded', 'geodir_wpml_set_filter' );
-		add_filter( 'icl_make_duplicate', 'geodir_multilingual_make_duplicate', 11, 4 );
-		add_filter( 'icl_ls_languages', 'geodir_wpml_filter_ls_languages', 11, 1 );
     }
     
     /**
