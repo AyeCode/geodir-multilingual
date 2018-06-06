@@ -20,13 +20,36 @@ class GeoDir_Multilingual_WPML {
 	public static function init() {
 		global $sitepress;
 
-		add_action( 'plugins_loaded', array( __CLASS__, 'ajax_set_guest_lang' ), -1 );
-		add_action( 'icl_make_duplicate', array( __CLASS__, 'make_duplicate' ), 11, 4 );
 		add_filter( 'icl_make_duplicate', array( __CLASS__, 'filter_ls_languages' ), 11, 1 );
 		add_filter( 'geodir_post_permalink_structure_cpt_slug', array( __CLASS__, 'post_permalink_structure_cpt_slug' ), 10, 3 );
 		add_filter( 'post_type_archive_link', array( __CLASS__, 'post_type_archive_link' ), 1000, 2 );
 		add_filter( 'geodir_term_link', array( __CLASS__, 'term_link' ), 10, 3 );
+		add_filter( 'geodir_posts_join', array( __CLASS__, 'posts_join' ), 10, 2 );
+		add_filter( 'geodir_posts_where', array( __CLASS__, 'posts_where' ), 10, 2 );
+		add_filter( 'geodir_filter_widget_listings_join', array( __CLASS__, 'widget_posts_join' ), 10, 2 );
+		add_filter( 'geodir_filter_widget_listings_where', array( __CLASS__, 'widget_posts_where' ), 10, 2 );
+		add_filter( 'geodir_unique_post_slug_posts_join', array( __CLASS__, 'unique_post_slug_posts_join' ), 10, 2 );
+		add_filter( 'geodir_unique_post_slug_posts_where', array( __CLASS__, 'unique_post_slug_posts_where' ), 10, 2 );
+		add_filter( 'geodir_unique_post_slug_terms_join', array( __CLASS__, 'unique_post_slug_terms_join' ), 10, 2 );
+		add_filter( 'geodir_unique_post_slug_terms_where', array( __CLASS__, 'unique_post_slug_terms_where' ), 10, 2 );
+		add_filter( 'geodir_unique_term_slug_posts_join', array( __CLASS__, 'unique_term_slug_posts_join' ), 10, 3 );
+		add_filter( 'geodir_unique_term_slug_posts_where', array( __CLASS__, 'unique_term_slug_posts_where' ), 10, 3 );
+		add_filter( 'geodir_export_categories_csv_columns', array( __CLASS__, 'export_categories_csv_columns' ), 10, 2 );
+		add_filter( 'geodir_export_categories_csv_row', array( __CLASS__, 'export_categories_csv_row' ), 10, 3 );
+		add_filter( 'geodir_filter_query_var_category', array( __CLASS__, 'filter_query_var_categories' ), 10, 2 );
+		add_filter( 'geodir_import_category_validate_item', array( __CLASS__, 'import_category_validate_item' ), 10, 2 );
+		add_filter( 'geodir_map_categories_term_id', array( __CLASS__, 'map_categories_term_id' ), 10, 2 );
+		add_filter( 'option_geodir_add_listing_page', array( __CLASS__, 'option_add_listing_page' ), 10, 1 );
+		add_filter( 'geodir_recent_reviews_query_join', array( __CLASS__, 'recent_reviews_query_join' ), 10, 3 );
+		add_filter( 'geodir_recent_reviews_query_where', array( __CLASS__, 'recent_reviews_query_where' ), 10, 3 );
+		add_filter( 'geodir_info_page_home_url', array( __CLASS__, 'icl_home_url' ), 10, 1 );
+		add_action( 'geodir_before_count_terms', array( __CLASS__, 'before_count_terms' ), -100, 3 );
+		add_action( 'geodir_after_count_terms', array( __CLASS__, 'after_count_terms' ), -100, 3 );
+
+		add_action( 'plugins_loaded', array( __CLASS__, 'ajax_set_guest_lang' ), -1 );
+		add_action( 'icl_make_duplicate', array( __CLASS__, 'make_duplicate' ), 11, 4 );
 		add_action( 'geodir_language_file_add_string', array( __CLASS__, 'register_string' ), 10, 1 );
+		add_action( 'geodir_category_imported', array( __CLASS__, 'category_imported' ), 10, 2 );
 
 		if ( $sitepress->get_setting( 'sync_comments_on_duplicates' ) ) {
             add_action( 'comment_post', array( __CLASS__, 'sync_comment' ), 100, 1 );
@@ -37,6 +60,139 @@ class GeoDir_Multilingual_WPML {
         //if ( is_admin() ) {
             //add_filter( 'geodir_design_settings', 'geodir_wpml_duplicate_settings', 10, 1 ); // TODO
         //}
+	}
+
+	public static function get_default_language() {
+		global $sitepress;
+
+		return $sitepress->get_default_language();
+	}
+
+	public static function get_current_language() {
+		global $sitepress;
+
+		return $sitepress->get_current_language();
+	}
+
+	/**
+	 * Get WPML language code for current term.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @global object $sitepress Sitepress WPML object.
+	 *
+	 * @param int $element_id Post ID or Term id.
+	 * @param string $element_type Element type. Ex: post_gd_place or tax_gd_placecategory.
+	 * @return Language code.
+	 */
+	function get_language_for_element( $element_id, $element_type ) {
+		global $sitepress;
+
+		return $sitepress->get_language_for_element( $element_id, $element_type );
+	}
+
+	/**
+	 * Get WPML original translation element id.
+	 *
+	 * @global object $sitepress Sitepress WPML object.
+	 *
+	 * @param int $element_id Post ID or Term id.
+	 * @param string $element_type Element type. Ex: post_gd_place or tax_gd_placecategory.
+	 * @return Original element id.
+	 */
+	public static function get_original_element_id( $element_id, $element_type ) {
+		global $sitepress;
+
+		$original_element_id = $sitepress->get_original_element_id( $element_id, $element_type );
+		if ( $element_id == $original_element_id ) {
+			$original_element_id = '';
+		}
+
+		return $original_element_id;
+	}
+
+	public static function get_object_id( $element_id, $element_type = 'post', $return_original_if_missing = false, $ulanguage_code = null ) {
+		return wpml_object_id_filter( $element_id, $element_type, $return_original_if_missing, $ulanguage_code );
+	}
+
+	public static function get_object_ids( $element_ids, $element_type = 'post', $return_original_if_missing = false, $ulanguage_code = null ) {
+		if ( empty( $element_ids ) || ! is_array( $element_ids ) ) {
+			return array();
+		}
+
+		$ids = array();
+		foreach ( $element_ids as $element_id ) {
+			if ( $element_id && ( $id = self::get_object_id( $element_id, $element_type, $return_original_if_missing, $ulanguage_code ) ) ) {
+				$ids[] = $id;
+			}
+		}
+
+		return $ids;
+	}
+
+	/**
+	 * Returns WPML element ID.
+	 *
+	 * @since   1.0.0
+	 *
+	 * @param int $page_id      The page ID.
+	 * @param string $post_type The post type.
+	 *
+	 * @return int Element ID when exists. Else the page id.
+	 */
+	public static function get_element_id( $page_id, $post_type ) {
+		global $sitepress;
+		if ( ! empty( $sitepress ) && isset( $sitepress->queries ) ) {
+			$trid = $sitepress->get_element_trid( $page_id, $post_type );
+
+			if ( $trid > 0 ) {
+				$translations = $sitepress->get_element_translations( $trid, $post_type );
+
+				$lang = self::get_current_language();
+				if ( ! $lang ) {
+					$lang = self::get_default_language();
+				}
+
+				if ( ! empty( $translations ) && ! empty( $lang ) && isset( $translations[ $lang ] ) && isset( $translations[ $lang ]->element_id ) && ! empty( $translations[ $lang ]->element_id ) ) {
+					$page_id = $translations[ $lang ]->element_id;
+				}
+			}
+		}
+
+		return $page_id;
+	}
+
+	public static function switch_lang( $code = null, $cookie_lang = true ) {
+		global $sitepress;
+
+		$current_lang = self::get_current_language();
+
+		if ( $current_lang != $code ) {
+			$sitepress->switch_lang( $code, $cookie_lang );
+		}
+	}
+
+	public static function store_lang( $switch_lang = 'all' ) {
+		global $geodir_wpml_switch_lang;
+
+		$current_lang = self::get_current_language();
+
+		if ( $current_lang != $switch_lang ) {
+			$geodir_wpml_switch_lang = $current_lang;
+
+			self::switch_lang( $switch_lang );
+		}
+	}
+
+	public static function restore_lang() {
+		global $geodir_wpml_switch_lang;
+
+		if ( ! empty( $geodir_wpml_switch_lang ) ) {
+			self::switch_lang( $geodir_wpml_switch_lang );
+		}
+
+		$geodir_wpml_switch_lang = '';
+
 	}
 
 	/**
@@ -113,7 +269,7 @@ class GeoDir_Multilingual_WPML {
 
 	public static function post_permalink_structure_cpt_slug( $cpt_slug, $gd_post, $post_link ) {
 		// Alter the CPT slug if WPML is set to do so
-		if ( !empty( $gd_post ) && geodir_wpml_is_post_type_translated( $gd_post->post_type ) ) {
+		if ( !empty( $gd_post ) && is_post_type_translated( $gd_post->post_type ) ) {
 			if ( self::is_slug_translation_on( $gd_post->post_type ) && ( $language_code = self::get_lang_from_url( $post_link ) ) ) {
 				$org_slug = $cpt_slug;
 
@@ -144,7 +300,7 @@ class GeoDir_Multilingual_WPML {
 			$slug = $post_types[ $post_type ]['rewrite']['slug'];
 
 			// Alter the CPT slug if WPML is set to do so
-			if ( geodir_wpml_is_post_type_translated( $post_type ) ) {
+			if ( is_post_type_translated( $post_type ) ) {
 				if ( self::is_slug_translation_on( $post_type ) && ( $language_code = self::get_lang_from_url( $link ) ) ) {
 					$org_slug = $slug;
 
@@ -167,7 +323,7 @@ class GeoDir_Multilingual_WPML {
 		$post_type = str_replace("category","",$taxonomy);
 		$post_type = str_replace("_tags","",$post_type);
 		$slug = $post_types[$post_type]['rewrite']['slug'];
-		if ( geodir_wpml_is_post_type_translated( $post_type ) && self::is_slug_translation_on( $post_type ) ) {
+		if ( is_post_type_translated( $post_type ) && self::is_slug_translation_on( $post_type ) ) {
 			global $sitepress;
 			$default_lang = $sitepress->get_default_language();
 			$language_code = self::get_lang_from_url( $term_link );
@@ -693,7 +849,7 @@ class GeoDir_Multilingual_WPML {
 		}
 		
 		$post_type = get_post_type( $post_id );
-		if ( !geodir_wpml_is_post_type_translated( $post_type ) || get_post_meta( $post_id, '_icl_lang_duplicate_of', true ) ) {
+		if ( ! is_post_type_translated( $post_type ) || get_post_meta( $post_id, '_icl_lang_duplicate_of', true ) ) {
 			return $allowed;
 		}
 		
@@ -821,5 +977,238 @@ class GeoDir_Multilingual_WPML {
 	 */
 	public static function translate_string( $string, $domain = 'geodirectory', $name = '', $language_code = NULL ) {
 		return apply_filters( 'wpml_translate_single_string', $string, $domain, $name, $language_code );
+	}
+
+	public static function posts_join( $join, $query ) {
+		global $wpdb, $geodir_post_type;
+
+		if ( is_post_type_translated( $geodir_post_type ) && ( $current_lang = self::get_current_language() ) ) {
+			$join .= " JOIN {$wpdb->prefix}icl_translations AS icl_t ON icl_t.element_id = {$wpdb->posts}.ID";
+		}
+
+		return $join;
+	}
+
+	public static function posts_where( $where, $query ) {
+		if ( ! empty( $_REQUEST['stype'] ) && geodir_is_page( 'search' ) ) {
+			$post_type = sanitize_text_field( $_REQUEST['stype'] );
+
+			if ( is_post_type_translated( $post_type ) && ( $current_lang = self::get_current_language() ) ) {
+				$where .= " AND icl_t.language_code = '" . $current_lang . "' AND icl_t.element_type IN( 'post_" . $post_type . "' ) ";
+			}
+		}
+
+		return $where;
+	}
+
+	public static function widget_posts_join( $join, $post_type ) {
+		global $wpdb;
+
+		if ( is_post_type_translated( $post_type ) && ( $current_lang = self::get_current_language() ) ) {
+			$join .= " JOIN {$wpdb->prefix}icl_translations AS icl_t ON icl_t.element_id = {$wpdb->posts}.ID";
+		}
+
+		return $join;
+	}
+
+	public static function widget_posts_where( $where, $post_type ) {
+		if ( is_post_type_translated( $post_type ) && ( $current_lang = self::get_current_language() ) ) {
+			$where .= " AND icl_t.language_code = '" . $current_lang . "' AND icl_t.element_type IN( 'post_" . $post_type . "' ) ";
+		}
+
+		return $where;
+	}
+
+	public static function get_post_language( $post_ID ) {
+		global $sitepress;
+
+		$post_lang = $post_ID ? $sitepress->post_translations()->get_element_lang_code( $post_ID ) : self::get_current_language();
+		if ( ! $post_lang ) {
+			$post_lang = $sitepress->post_translations()->get_save_post_lang( $post_ID, $sitepress );
+		}
+
+		return $post_lang;
+	}
+
+	public static function unique_post_slug_posts_join( $join, $post_ID, $post_type ) {
+		global $wpdb, $sitepress;
+
+		if ( empty( $post_ID ) || empty( $post_type ) ) {
+			return $join;
+		}
+
+		if ( is_post_type_translated( $post_type ) && ( $post_lang = self::get_post_language( $post_ID ) ) ) {
+			$join .= " JOIN {$wpdb->prefix}icl_translations AS icl_t ON p.ID = icl_t.element_id AND icl_t.element_type = CONCAT( 'post_', p.post_type )";
+		}
+
+		return $join;
+	}
+
+	public static function unique_post_slug_posts_where( $where, $post_ID, $post_type ) {
+		global $wpdb;
+
+		if ( empty( $post_ID ) || empty( $post_type ) ) {
+			return $where;
+		}
+
+		if ( is_post_type_translated( $post_type ) && ( $post_lang = self::get_post_language( $post_ID ) ) ) {
+			$where .= " AND icl_t.language_code = '" . $post_lang . "'";
+		}
+
+		return $where;
+	}
+
+	public static function unique_post_slug_terms_join( $join, $post_ID, $post_type ) {
+		global $wpdb, $sitepress;
+
+		if ( empty( $post_ID ) || empty( $post_type ) ) {
+			return $join;
+		}
+
+		if ( is_post_type_translated( $post_type ) && ( $post_lang = self::get_post_language( $post_ID ) ) ) {
+			$join .= " JOIN {$wpdb->prefix}icl_translations AS icl_t ON icl_t.element_id = tt.term_taxonomy_id AND icl_t.element_type = CONCAT( 'tax_', tt.taxonomy )";
+		}
+
+		return $join;
+	}
+
+	public static function unique_post_slug_terms_where( $where, $post_ID, $post_type ) {
+		global $wpdb;
+
+		if ( empty( $post_ID ) || empty( $post_type ) ) {
+			return $where;
+		}
+
+		if ( is_post_type_translated( $post_type ) && ( $post_lang = self::get_post_language( $post_ID ) ) ) {
+			$where .= " AND icl_t.language_code = '" . $post_lang ."'";
+		}
+
+		return $where;
+	}
+
+	public static function unique_term_slug_posts_join( $join, $term_id, $taxonomy, $post_type ) {
+		global $wpdb, $sitepress;
+
+		if ( empty( $term_id ) || empty( $post_type ) ) {
+			return $join;
+		}
+
+		$term_lang = self::get_language_for_element( $term_id, 'tax_' . $taxonomy );
+        if ( ! $term_lang ) {
+            $term_lang = self::get_current_language();
+        }
+
+		if ( is_taxonomy_translated( $taxonomy ) && is_post_type_translated( $post_type ) && $term_lang ) {
+			$join .= " JOIN {$wpdb->prefix}icl_translations AS icl_t ON p.ID = icl_t.element_id AND icl_t.element_type = CONCAT( 'post_', p.post_type )";
+		}
+
+		return $join;
+	}
+
+	public static function unique_term_slug_posts_where( $where, $term_id, $taxonomy, $post_type ) {
+		global $wpdb;
+
+		if ( empty( $term_id ) || empty( $post_type ) ) {
+			return $where;
+		}
+
+		$term_lang = self::get_language_for_element( $term_id, 'tax_' . $taxonomy );
+        if ( ! $term_lang ) {
+            $term_lang = self::get_current_language();
+        }
+
+		if ( is_taxonomy_translated( $taxonomy ) && is_post_type_translated( $post_type ) && $term_lang ) {
+			$where .= " AND icl_t.language_code = '" . $term_lang . "'";
+		}
+
+		return $where;
+	}
+
+	public static function export_categories_csv_columns( $row, $post_type ) {
+		if ( is_taxonomy_translated( $post_type . 'category' ) ) {
+			$row[] = 'cat_language';
+			$row[] = 'cat_id_original';
+		}
+		return $row;
+	}
+
+	public static function export_categories_csv_row( $row, $term_id, $post_type ) {
+		if ( is_taxonomy_translated( $post_type . 'category' ) ) {
+			$row[] = self::get_language_for_element( $term_id, 'tax_' . $post_type . 'category' );
+			$row[] = self::get_original_element_id( $term_id, 'tax_' . $post_type . 'category' );
+		}
+		return $row;
+	}
+
+	public static function filter_query_var_categories( $categories, $post_type ) {
+		if ( ! empty( $categories ) && is_array( $categories ) && ! in_array( '0', $categories ) && is_taxonomy_translated( $post_type . 'category' ) ) {
+			$categories = self::get_object_ids( $categories, $post_type . 'category' );
+        }
+
+		return $categories;
+	}
+
+	public static function import_category_validate_item( $item, $data ) {
+		$item['cat_language']    = ! empty( $data['cat_language'] ) ? trim( $data['cat_language'] ) : '';
+		$item['cat_id_original'] = ! empty( $data['cat_id_original'] ) ? absint( $data['cat_id_original'] ) : '';
+
+		return $item;
+	}
+
+	public static function category_imported( $term_id, $term_data ) {
+		if ( ! empty( $term_id ) && ! empty( $term_data['cat_language'] ) && ! empty( $term_data['cat_id_original'] ) && is_taxonomy_translated( $term_data['taxonomy'] ) ) {
+			$element_type = 'tax_' . $term_data['taxonomy'];
+			$trid = $sitepress->get_element_trid( (int) $term_data['cat_id_original'], $element_type );
+			$source_lang = self::get_language_for_element( $term_id, $element_type );
+			if ( ! $source_lang ) {
+				$source_lang = self::get_default_language();
+			}
+
+			$sitepress->set_element_language_details( $term_id, $element_type, $trid, $term_data['cat_language'], $source_lang );
+		}
+	}
+
+	public static function map_categories_term_id( $term_id, $post_type ) {
+		if ( is_taxonomy_translated( $post_type . 'category' ) ) {
+			$default_lang = self::get_default_language();
+			$term_id = self::get_object_id( $term_id, $post_type . 'category', true, $default_lang );
+		}
+		return $term_id;
+	}
+
+	public static function option_add_listing_page( $page_id ) {
+		return self::get_element_id( $page_id, 'post_page' );
+	}
+
+	public static function recent_reviews_query_join( $join, $post_type = '', $add_location_filter = false ) {
+		global $wpdb;
+
+		if ( $current_lang = self::get_current_language() ) {
+			$join .= " JOIN {$wpdb->prefix}icl_translations AS icltr2 ON icltr2.element_id = c.comment_post_ID AND p.ID = icltr2.element_id AND CONCAT( 'post_', p.post_type ) = icltr2.element_type LEFT JOIN {$wpdb->prefix}icl_translations AS icltr_comment ON icltr_comment.element_id = c.comment_ID AND icltr_comment.element_type = 'comment'";
+		}
+
+		return $join;
+	}
+
+	public static function recent_reviews_query_where( $where, $post_type = '', $add_location_filter = false ) {
+		global $wpdb;
+
+		if ( $current_lang = self::get_current_language() ) {
+			$where .= " AND icltr2.language_code = '{$current_lang}' AND ( icltr_comment.language_code IS NULL OR icltr_comment.language_code = icltr2.language_code )";
+		}
+
+		return $where;
+	}
+
+	public static function icl_home_url( $home_url ) {
+		return icl_get_home_url();
+	}
+
+	public static function before_count_terms( $post_type, $taxonomy, $args ) {
+		self::store_lang();
+	}
+
+	public static function after_count_terms( $post_type, $taxonomy, $args ) {
+		self::restore_lang();
 	}
 }

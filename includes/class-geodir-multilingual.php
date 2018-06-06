@@ -159,6 +159,7 @@ final class GeoDir_Multilingual {
         require_once( GEODIR_MULTILINGUAL_PLUGIN_DIR . 'includes/functions.php' );
 
 		GeoDir_Multilingual_WPML::init();
+		GeoDir_Multilingual_AJAX::init();
 
         if ( $this->is_request( 'admin' ) || $this->is_request( 'test' ) || $this->is_request( 'cli' ) ) {
             new GeoDir_Multilingual_Admin();
