@@ -29,7 +29,7 @@ class GeoDir_Multilingual_AJAX {
 	public static function add_ajax_events() {
 		// geodirectory_EVENT => nopriv
 		$ajax_events = array(
-			'duplicate'				=> true,
+			'wpml_duplicate'				=> true,
 		);
 
 		foreach ( $ajax_events as $ajax_event => $nopriv ) {
@@ -44,7 +44,7 @@ class GeoDir_Multilingual_AJAX {
 		}
 	}
 
-	public static function duplicate() {
+	public static function wpml_duplicate() {
 		GeoDir_Multilingual_WPML::frontend_duplicate();
 	}
 }

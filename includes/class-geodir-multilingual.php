@@ -175,7 +175,15 @@ final class GeoDir_Multilingual {
      * @since  1.0.0
      */
     private function init_hooks() {
-        add_action( 'init', array( $this, 'init' ), 0 );
+        register_activation_hook( GEODIR_MULTILINGUAL_PLUGIN_FILE, array( $this, 'activate' ) );
+        register_deactivation_hook( GEODIR_MULTILINGUAL_PLUGIN_FILE, array( $this, 'deactivate' ) );
+
+		add_action( 'init', array( $this, 'init' ), 0 );
+
+		if ( $this->is_request( 'frontend' ) ) {
+			add_action( 'wp_enqueue_scripts', array( $this, 'add_styles' ), 10 );
+			add_action( 'wp_enqueue_scripts', array( $this, 'add_scripts' ), 10 );
+		}
     }
     
     /**
@@ -258,4 +266,93 @@ final class GeoDir_Multilingual {
 	public function ajax_url() {
 		return admin_url( 'admin-ajax.php', 'relative' );
 	}
+
+	/**
+	 * Enqueue styles.
+	 */
+	public function add_styles() {
+
+		// Register styles
+		wp_register_style( 'geodir-multilingual', GEODIR_MULTILINGUAL_PLUGIN_URL . '/assets/css/style.css', array(), GEODIR_MULTILINGUAL_VERSION );
+
+		if ( geodir_is_page( 'detail' ) ) {
+			wp_enqueue_style( 'geodir-multilingual' );
+		}
+	}
+
+	/**
+	 * Enqueue scripts.
+	 */
+	public function add_scripts() {
+		$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
+
+		// Register scripts
+		wp_register_script( 'geodir-multilingual', GEODIR_MULTILINGUAL_PLUGIN_URL . '/assets/js/script' . $suffix . '.js', array( 'jquery', 'geodir' ), GEODIR_MULTILINGUAL_VERSION );
+
+		if ( geodir_is_page( 'detail' ) ) {
+			wp_enqueue_script( 'geodir-multilingual' );
+			wp_localize_script( 'geodir-multilingual', 'geodir_multilingual_params', geodir_multilingual_params() );
+		}
+	}
+
+	/**
+     * Short Description.
+     *
+     * Long Description.
+     *
+     * @since    1.0.0
+     */
+    public function activate( $network_wide = false ) {
+        global $wpdb;
+
+        if ( is_multisite() && $network_wide ) {
+            foreach ( $wpdb->get_col( "SELECT blog_id FROM $wpdb->blogs LIMIT 100" ) as $blog_id ) {
+                switch_to_blog( $blog_id );
+
+                $updated = $this->install();
+
+                do_action( 'geodir_multilingual_network_activate', $blog_id, $updated );
+
+                restore_current_blog();
+            }
+        } else {
+            $updated = $this->install();
+
+            do_action( 'geodir_multilingual_activate', $updated );
+        }
+        
+        // Bail if activating from network, or bulk
+        if ( is_network_admin() || isset( $_GET['activate-multi'] ) ) {
+            return;
+        }
+    }
+    
+    /**
+     * Short Description.
+     *
+     * Long Description.
+     *
+     * @since    1.0.0
+     */
+    public function deactivate() {
+        do_action( 'geodir_multilingual_deactivate' );
+    }
+
+	public function install() {
+        global $geodir_options;
+
+        $current_version = get_option( 'geodir_multilingual_version' );
+
+        if ( $current_version ) {
+            update_option( 'geodir_multilingual_version_upgraded_from', $current_version );
+        }
+
+        if ( ! empty( $geodir_options ) && is_array( $geodir_options ) ) {
+			set_transient( '_geodir_multilingual_installed', $geodir_options, 30 );
+
+			do_action( 'geodir_multilingual_install' );
+        }
+
+        update_option( 'geodir_multilingual_version', GEODIR_MULTILINGUAL_VERSION );
+    }
 }
