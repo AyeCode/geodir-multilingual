@@ -4,6 +4,13 @@ jQuery(function($) {
 		  geodir_multilingual_wpml_duplicate(this, e);
 		});
 	}
+	if ($('input#icl_cfo').length) {
+		$("input#icl_cfo").on("click", function(e) {
+		  setTimeout(function() {
+			geodir_multilingual_wpml_copy_from_original(this, e);
+		  }, 2000);
+		});
+	}
 });
 
 function geodir_multilingual_wpml_duplicate( el, e ) {
@@ -50,4 +57,11 @@ function geodir_multilingual_wpml_duplicate( el, e ) {
 		jQuery('.fa-refresh', $table).hide();
 		$btn.removeAttr('disabled');
 	});
+}
+
+function geodir_multilingual_wpml_copy_from_original( el, e ) {
+    var $el
+	$el	= jQuery(el);
+
+	jQuery('#geodir_post_info').closest('form').find('select').trigger("change.select2");
 }

@@ -26,3 +26,10 @@ function geodir_multilingual_params() {
 
     return apply_filters( 'geodir_multilingual_params', $params );
 }
+
+function geodir_multilingual_admin_params() {
+	$params = array(
+    );
+
+    return apply_filters( 'geodir_multilingual_admin_params', $params );
+}

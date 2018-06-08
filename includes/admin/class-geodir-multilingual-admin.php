@@ -24,6 +24,8 @@ class GeoDir_Multilingual_Admin {
 		add_action( 'init', array( $this, 'includes' ) );
 		add_filter( 'geodir_get_settings_cpt', array( __CLASS__, 'cpt_settings' ), 20, 3 );
 		add_filter( 'geodir_save_post_type', array( __CLASS__, 'sanatize_post_type' ), 10, 3 );
+		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'admin_styles' ), 10 );
+		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'admin_scripts' ), 10 );
 	}
 
 	/**
@@ -67,6 +69,34 @@ class GeoDir_Multilingual_Admin {
 		$wpml_duplicate = ! empty( $request['wpml_duplicate'] ) ? 1 : 0;
 		$data[ $post_type ]['wpml_duplicate'] = $wpml_duplicate;
 		return $data;
+	}
+
+	/**
+	 * Enqueue styles.
+	 */
+	public static function admin_styles() {
+	}
+
+	/**
+	 * Enqueue scripts.
+	 */
+	public static function admin_scripts() {
+		global $post, $pagenow;
+
+		$screen         = get_current_screen();
+		$screen_id      = $screen ? $screen->id : '';
+		$page 			= ! empty( $_GET['page'] ) ? $_GET['page'] : '';
+		$gd_screen_id 	= sanitize_title( __( 'GeoDirectory', 'geodirectory' ) );
+
+		$suffix       	= defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
+		
+		// Register scripts
+		wp_register_script( 'geodir-multilingual', GEODIR_MULTILINGUAL_PLUGIN_URL . '/assets/js/script' . $suffix . '.js', array( 'jquery', 'geodir-admin-script' ), GEODIR_MULTILINGUAL_VERSION );
+
+		if ( 'edit.php' === $pagenow || 'post.php' === $pagenow || 'post-new.php' == $pagenow ) {
+			wp_enqueue_script( 'geodir-multilingual' );
+			wp_localize_script( 'geodir-multilingual', 'geodir_multilingual_admin_params', geodir_multilingual_admin_params() );
+		}
 	}
 }
 
