@@ -20,7 +20,7 @@ class GeoDir_Multilingual_WPML {
 	public static function init() {
 		global $sitepress;
 
-		add_filter( 'icl_make_duplicate', array( __CLASS__, 'filter_ls_languages' ), 11, 1 );
+		add_filter( 'icl_ls_languages', array( __CLASS__, 'icl_ls_languages' ), 11, 1 );
 		add_filter( 'geodir_get_page_id', array( __CLASS__, 'get_page_id' ), 10, 3 );
 		add_filter( 'geodir_post_permalink_structure_cpt_slug', array( __CLASS__, 'post_permalink_structure_cpt_slug' ), 10, 3 );
 		add_filter( 'post_type_archive_link', array( __CLASS__, 'post_type_archive_link' ), 1000, 2 );
@@ -34,7 +34,7 @@ class GeoDir_Multilingual_WPML {
 		add_filter( 'option_geodir_add_listing_page', array( __CLASS__, 'option_add_listing_page' ), 10, 1 );
 		add_filter( 'geodir_recent_reviews_query_join', array( __CLASS__, 'recent_reviews_query_join' ), 10, 3 );
 		add_filter( 'geodir_recent_reviews_query_where', array( __CLASS__, 'recent_reviews_query_where' ), 10, 3 );
-		add_filter( 'geodir_info_page_home_url', array( __CLASS__, 'icl_home_url' ), 10, 1 );
+		add_filter( 'geodir_info_page_home_url', array( __CLASS__, 'home_url' ), 0, 1 );
 		add_filter( 'geodir_unique_post_slug_posts_join', array( __CLASS__, 'unique_post_slug_posts_join' ), 10, 3 );
 		add_filter( 'geodir_unique_post_slug_posts_where', array( __CLASS__, 'unique_post_slug_posts_where' ), 10, 3 );
 		add_filter( 'geodir_unique_post_slug_terms_join', array( __CLASS__, 'unique_post_slug_terms_join' ), 10, 3 );
@@ -55,6 +55,7 @@ class GeoDir_Multilingual_WPML {
 		add_filter( 'geodir_switch_locale', array( __CLASS__, 'switch_locale' ), 10, 1 );
 		add_filter( 'geodir_restore_locale', array( __CLASS__, 'restore_locale' ), 10, 1 );
 		add_filter( 'wpml_copy_from_original_custom_fields', array( __CLASS__, 'copy_from_original_custom_fields' ), 10, 1 );
+		add_filter( 'geodir_cpt_post_type_archive_link_slug', array( __CLASS__, 'post_type_archive_link_slug' ), 10, 3 );
 
 		add_action( 'plugins_loaded', array( __CLASS__, 'ajax_set_guest_lang' ), -1 );
 		add_action( 'icl_make_duplicate', array( __CLASS__, 'make_duplicate' ), 11, 4 );
@@ -241,10 +242,11 @@ class GeoDir_Multilingual_WPML {
 	 * @param array    $languages WPML active languages.
 	 * @return array Filtered languages.
 	 */
-	public static function filter_ls_languages($languages) {    
-		if (geodir_is_geodir_page()) {        
+	public static function icl_ls_languages($languages) {    
+		if (geodir_is_geodir_page()) {
 			$keep_vars = array();
 			
+			$is_location = false;
 			if (geodir_is_page('add-listing')) {
 				$keep_vars = array('listing_type', 'package_id');
 			} else if (geodir_is_page('search')) {
@@ -253,24 +255,47 @@ class GeoDir_Multilingual_WPML {
 				$keep_vars = array('geodir_dashbord', 'stype', 'list');
 			} else if (geodir_is_page('login')) {
 				$keep_vars = array('forgot', 'signup');
+			} else if ( geodir_is_page( 'location' ) ) {
+				$is_location = true;
+				$location_terms = geodir_get_current_location_terms();
+				$location_terms = geodir_remove_location_terms( $location_terms );
+
+				if ( empty( $location_terms ) ) {
+					return $languages;
+				}
 			}
 
 			$keep_vars = apply_filters( 'geodir_multilingual_wpml_ls_languages_keep_vars', $keep_vars, $languages );
 
 			if (!empty($keep_vars)) {
+				$permalink_structure = get_option( 'permalink_structure' );
+				$current_lang = self::get_current_language();
+
 				foreach ( $languages as $code => $url) {
 					$filter_url = $url['url'];
-					
-					foreach ($keep_vars as $var) {
-						if (isset($_GET[$var]) && !is_array($_GET[$var])) {
-							$filter_url = remove_query_arg(array($var), $filter_url);
-							$filter_url = add_query_arg(array($var => $_GET[$var]), $filter_url);
+					if ( $is_location ) {
+						self::switch_lang( $code );
+						$filter_url = trailingslashit( geodir_get_location_link( 'base' ) );
+						if ($permalink_structure) {
+							$filter_url .= implode( '/', array_values( $location_terms ) ) . '/';
+						} else {
+							$filter_url = add_query_arg( $location_terms, $filter_url );
+						}
+					} else {
+						foreach ($keep_vars as $var) {
+							if (isset($_GET[$var]) && !is_array($_GET[$var])) {
+								$filter_url = remove_query_arg(array($var), $filter_url);
+								$filter_url = add_query_arg(array($var => $_GET[$var]), $filter_url);
+							}
 						}
 					}
 					
 					if ($filter_url != $url['url']) {
 						$languages[$code]['url'] = $filter_url;
 					}
+				}
+				if ( $is_location ) {
+					self::switch_lang( $current_lang );
 				}
 			}
 		}
@@ -282,13 +307,7 @@ class GeoDir_Multilingual_WPML {
 		// Alter the CPT slug if WPML is set to do so
 		if ( !empty( $gd_post ) && !empty( $gd_post->post_type ) && is_post_type_translated( $gd_post->post_type ) ) {
 			if ( self::is_slug_translation_on( $gd_post->post_type ) && ( $language_code = self::get_lang_from_url( $post_link ) ) ) {
-				$org_slug = $cpt_slug;
-
-				$cpt_slug = apply_filters( 'wpml_translate_single_string', $cpt_slug, 'WordPress', 'URL slug: ' . $cpt_slug, $language_code );
-
-				if ( ! $cpt_slug ) {
-					$cpt_slug = $org_slug;
-				}
+				$cpt_slug = self::translate_slug( $cpt_slug, $gd_post->post_type, $language_code );
 			}
 		}
 
@@ -315,7 +334,7 @@ class GeoDir_Multilingual_WPML {
 				if ( self::is_slug_translation_on( $post_type ) && ( $language_code = self::get_lang_from_url( $link ) ) ) {
 					$org_slug = $slug;
 
-					$slug = apply_filters( 'wpml_translate_single_string', $slug, 'WordPress', 'URL slug: ' . $slug, $language_code );
+					$slug = self::translate_string( $slug, 'WordPress', 'URL slug: ' . $post_type, $language_code );
 
 					if ( ! $slug ) {
 						$slug = $org_slug;
@@ -343,11 +362,7 @@ class GeoDir_Multilingual_WPML {
 			}
 
 			$org_slug = $slug;
-			$slug = apply_filters( 'wpml_translate_single_string', $slug, 'WordPress', 'URL slug: ' . $slug, $language_code );
-
-			if ( ! $slug ) {
-				$slug = $org_slug;
-			}
+			$slug = self::translate_slug( $slug, $post_type, $language_code );
 
 			$term_link = trailingslashit( preg_replace( "/" . preg_quote( $org_slug, "/" ) . "/", $slug, $term_link, 1 ) );
 		}
@@ -978,12 +993,16 @@ class GeoDir_Multilingual_WPML {
 	}
 
 	public static function posts_where( $where, $query ) {
+		global $geodir_post_type;
+
 		if ( ! empty( $_REQUEST['stype'] ) && geodir_is_page( 'search' ) ) {
 			$post_type = sanitize_text_field( $_REQUEST['stype'] );
+		} else {
+			$post_type = $geodir_post_type;
+		}
 
-			if ( is_post_type_translated( $post_type ) && ( $current_lang = self::get_current_language() ) ) {
-				$where .= " AND icl_t.language_code = '" . $current_lang . "' AND icl_t.element_type IN( 'post_" . $post_type . "' ) ";
-			}
+		if ( ! empty( $post_type ) && is_post_type_translated( $post_type ) && ( $current_lang = self::get_current_language() ) ) {
+			$where .= " AND icl_t.language_code = '" . $current_lang . "' AND icl_t.element_type IN( 'post_" . $post_type . "' ) ";
 		}
 
 		return $where;
@@ -1204,8 +1223,8 @@ class GeoDir_Multilingual_WPML {
 		return $where;
 	}
 
-	public static function icl_home_url( $home_url ) {
-		return icl_get_home_url();
+	public static function home_url( $home_url = '' ) {
+		return apply_filters( 'wpml_home_url', $home_url );
 	}
 
 	public static function before_count_terms( $post_type, $taxonomy, $args ) {
@@ -1348,5 +1367,22 @@ class GeoDir_Multilingual_WPML {
 		}
 
 		return $builtin_custom_fields;
+	}
+
+	public static function translate_slug( $slug, $post_type, $language_code ) {
+		$slug_translated = self::translate_string( $slug, 'WordPress', 'URL slug: ' . $post_type, $language_code );
+
+		if ( ! $slug_translated ) {
+			$slug_translated = $slug;
+		}
+
+		return $slug_translated;
+	}
+
+	public static function post_type_archive_link_slug( $slug, $post_type, $link ) {
+		if ( is_post_type_translated( $post_type ) && self::is_slug_translation_on( $post_type ) && ( $language_code = self::get_lang_from_url( $link ) ) ) {
+			$slug = self::translate_slug( $slug, $post_type, $language_code );
+		}
+		return $slug;
 	}
 }
