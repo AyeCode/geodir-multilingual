@@ -83,6 +83,12 @@ class GeoDir_Multilingual_WPML {
 		return $sitepress->get_current_language();
 	}
 
+	public static function is_translated_post_type( $post_type ) {
+		global $sitepress;
+
+		return $sitepress->is_translated_post_type( $post_type );
+	}
+
 	/**
 	 * Get WPML language code for current term.
 	 *
@@ -984,17 +990,17 @@ class GeoDir_Multilingual_WPML {
 	}
 
 	public static function posts_join( $join, $query ) {
-		global $wpdb, $geodir_post_type;
+		global $wpdb, $geodir_post_type, $wpml_query_filter;
 
-		if ( is_post_type_translated( $geodir_post_type ) && ( $current_lang = self::get_current_language() ) ) {
-			$join .= " JOIN {$wpdb->prefix}icl_translations AS icl_t ON icl_t.element_id = {$wpdb->posts}.ID";
+		if ( ! empty( $wpml_query_filter ) && self::is_translated_post_type( $geodir_post_type ) ) {
+			$join = $wpml_query_filter->filter_single_type_join( $join, $geodir_post_type );
 		}
 
 		return $join;
 	}
 
 	public static function posts_where( $where, $query ) {
-		global $geodir_post_type;
+		global $geodir_post_type, $wpml_query_filter;
 
 		if ( ! empty( $_REQUEST['stype'] ) && geodir_is_page( 'search' ) ) {
 			$post_type = sanitize_text_field( $_REQUEST['stype'] );
@@ -1002,26 +1008,28 @@ class GeoDir_Multilingual_WPML {
 			$post_type = $geodir_post_type;
 		}
 
-		if ( ! empty( $post_type ) && is_post_type_translated( $post_type ) && ( $current_lang = self::get_current_language() ) ) {
-			$where .= " AND icl_t.language_code = '" . $current_lang . "' AND icl_t.element_type IN( 'post_" . $post_type . "' ) ";
+		if ( ! empty( $wpml_query_filter ) && self::is_translated_post_type( $geodir_post_type ) ) {
+			$where = $wpml_query_filter->filter_single_type_where( $where, $geodir_post_type );
 		}
 
 		return $where;
 	}
 
 	public static function widget_posts_join( $join, $post_type ) {
-		global $wpdb;
+		global $wpdb, $wpml_query_filter;;
 
-		if ( is_post_type_translated( $post_type ) && ( $current_lang = self::get_current_language() ) ) {
-			$join .= " JOIN {$wpdb->prefix}icl_translations AS icl_t ON icl_t.element_id = {$wpdb->posts}.ID";
+		if ( ! empty( $wpml_query_filter ) && self::is_translated_post_type( $post_type ) ) {
+			$join = $wpml_query_filter->filter_single_type_join( $join, $post_type );
 		}
 
 		return $join;
 	}
 
 	public static function widget_posts_where( $where, $post_type ) {
-		if ( is_post_type_translated( $post_type ) && ( $current_lang = self::get_current_language() ) ) {
-			$where .= " AND icl_t.language_code = '" . $current_lang . "' AND icl_t.element_type IN( 'post_" . $post_type . "' ) ";
+		global $wpml_query_filter;
+
+		if ( ! empty( $wpml_query_filter ) && self::is_translated_post_type( $post_type ) ) {
+			$where = $wpml_query_filter->filter_single_type_where( $where, $post_type );
 		}
 
 		return $where;
