@@ -64,6 +64,7 @@ class GeoDir_Multilingual_WPML {
 		add_action( 'geodir_before_count_terms', array( __CLASS__, 'before_count_terms' ), -100, 3 );
 		add_action( 'geodir_after_count_terms', array( __CLASS__, 'after_count_terms' ), -100, 3 );
 		add_action( 'save_post', array( __CLASS__, 'setup_save_post' ), 0, 3 );
+		add_action( 'save_post', array( __CLASS__, 'wpml_media_duplicate' ), 101, 2 );
 
 		if ( $sitepress->get_setting( 'sync_comments_on_duplicates' ) ) {
             add_action( 'comment_post', array( __CLASS__, 'sync_comment' ), 100, 1 );
@@ -80,6 +81,12 @@ class GeoDir_Multilingual_WPML {
 		global $sitepress;
 
 		return $sitepress->get_current_language();
+	}
+
+	public static function is_translated_post_type( $post_type ) {
+		global $sitepress;
+
+		return $sitepress->is_translated_post_type( $post_type );
 	}
 
 	/**
@@ -983,17 +990,17 @@ class GeoDir_Multilingual_WPML {
 	}
 
 	public static function posts_join( $join, $query ) {
-		global $wpdb, $geodir_post_type;
+		global $wpdb, $geodir_post_type, $wpml_query_filter;
 
-		if ( is_post_type_translated( $geodir_post_type ) && ( $current_lang = self::get_current_language() ) ) {
-			$join .= " JOIN {$wpdb->prefix}icl_translations AS icl_t ON icl_t.element_id = {$wpdb->posts}.ID";
+		if ( ! empty( $wpml_query_filter ) && self::is_translated_post_type( $geodir_post_type ) ) {
+			$join = $wpml_query_filter->filter_single_type_join( $join, $geodir_post_type );
 		}
 
 		return $join;
 	}
 
 	public static function posts_where( $where, $query ) {
-		global $geodir_post_type;
+		global $geodir_post_type, $wpml_query_filter;
 
 		if ( ! empty( $_REQUEST['stype'] ) && geodir_is_page( 'search' ) ) {
 			$post_type = sanitize_text_field( $_REQUEST['stype'] );
@@ -1001,26 +1008,28 @@ class GeoDir_Multilingual_WPML {
 			$post_type = $geodir_post_type;
 		}
 
-		if ( ! empty( $post_type ) && is_post_type_translated( $post_type ) && ( $current_lang = self::get_current_language() ) ) {
-			$where .= " AND icl_t.language_code = '" . $current_lang . "' AND icl_t.element_type IN( 'post_" . $post_type . "' ) ";
+		if ( ! empty( $wpml_query_filter ) && self::is_translated_post_type( $geodir_post_type ) ) {
+			$where = $wpml_query_filter->filter_single_type_where( $where, $geodir_post_type );
 		}
 
 		return $where;
 	}
 
 	public static function widget_posts_join( $join, $post_type ) {
-		global $wpdb;
+		global $wpdb, $wpml_query_filter;;
 
-		if ( is_post_type_translated( $post_type ) && ( $current_lang = self::get_current_language() ) ) {
-			$join .= " JOIN {$wpdb->prefix}icl_translations AS icl_t ON icl_t.element_id = {$wpdb->posts}.ID";
+		if ( ! empty( $wpml_query_filter ) && self::is_translated_post_type( $post_type ) ) {
+			$join = $wpml_query_filter->filter_single_type_join( $join, $post_type );
 		}
 
 		return $join;
 	}
 
 	public static function widget_posts_where( $where, $post_type ) {
-		if ( is_post_type_translated( $post_type ) && ( $current_lang = self::get_current_language() ) ) {
-			$where .= " AND icl_t.language_code = '" . $current_lang . "' AND icl_t.element_type IN( 'post_" . $post_type . "' ) ";
+		global $wpml_query_filter;
+
+		if ( ! empty( $wpml_query_filter ) && self::is_translated_post_type( $post_type ) ) {
+			$where = $wpml_query_filter->filter_single_type_where( $where, $post_type );
 		}
 
 		return $where;
@@ -1384,5 +1393,136 @@ class GeoDir_Multilingual_WPML {
 			$slug = self::translate_slug( $slug, $post_type, $language_code );
 		}
 		return $slug;
+	}
+
+	/**
+	 * @param int     $pidd
+	 * @param WP_Post $post
+	 *
+	 * @return void
+	 */
+	public static function wpml_media_duplicate( $pidd, $post ) {
+		global $wpdb, $sitepress;
+
+		$request_post_icl_ajx_action = filter_input(INPUT_POST, 'icl_ajx_action', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_NULL_ON_FAILURE);
+
+		if ( empty( $pidd ) || empty( $post ) || $request_post_icl_ajx_action == 'make_duplicates' || get_post_meta( $pidd, '_icl_lang_duplicate_of', true ) ) {
+			return;
+		}
+
+		if ( $post->post_status == "auto-draft" || ! geodir_is_gd_post_type( $post->post_type ) ) {
+			return;
+		}
+
+		$posts_prepared = $wpdb->prepare("SELECT post_type, post_status FROM {$wpdb->posts} WHERE ID = %d", array($pidd));
+		list( $post_type, $post_status ) = $wpdb->get_row( $posts_prepared, ARRAY_N );
+
+		// checking - if translation and not saved before
+		if ( isset( $_GET[ 'trid' ] ) && !empty( $_GET[ 'trid' ] ) && $post_status == 'auto-draft' ) {
+			// get source language
+			if ( isset( $_GET[ 'source_lang' ] ) && !empty( $_GET[ 'source_lang' ] ) ) {
+				$src_lang = $_GET[ 'source_lang' ];
+			} else {
+				$src_lang = self::get_default_language();
+			}
+
+			// get source id
+			$src_id_prepared =  $wpdb->prepare("SELECT element_id FROM {$wpdb->prefix}icl_translations WHERE trid=%d AND language_code=%s", array($_GET['trid'], $src_lang));
+			$src_id = $wpdb->get_var( $src_id_prepared );
+
+			// checking - if set duplicate media
+			if ( get_post_meta( $src_id, '_wpml_media_duplicate', true ) ) {
+				// duplicate media before first save
+				self::duplicate_post_attachments( $pidd, $_GET[ 'trid' ], $src_lang, self::get_language_for_element( $pidd, 'post_' . $post_type ) );
+			}
+		}
+
+		// exceptions
+		if (
+			!$sitepress->is_translated_post_type( $post_type )
+			|| isset( $_POST[ 'autosave' ] )
+			|| ( isset( $_POST[ 'post_ID' ] ) && $_POST[ 'post_ID' ] != $pidd )
+			|| ( isset( $_POST[ 'post_type' ] ) && $_POST[ 'post_type' ] === 'revision' )
+			|| $post_type === 'revision'
+			|| get_post_meta( $pidd, '_wp_trash_meta_status', true )
+			|| ( isset( $_GET[ 'action' ] ) && $_GET[ 'action' ] === 'restore' )
+			|| $post_status === 'auto-draft'
+		) {
+			return;
+		}
+
+		if ( isset( $_POST[ 'icl_trid' ] ) ) {
+			$icl_trid = $_POST[ 'icl_trid' ];
+		} else {
+			// get trid from database.
+			$icl_trid_prepared = $wpdb->prepare("SELECT trid FROM {$wpdb->prefix}icl_translations WHERE element_id=%d AND element_type = %s", array($pidd, 'post_' . $post_type));
+			$icl_trid = $wpdb->get_var( $icl_trid_prepared );
+		}
+
+		if ( $icl_trid ) {
+			$language_details = $sitepress->get_element_language_details( $pidd, 'post_' . $post_type );
+
+			// In some cases the sitepress cache doesn't get updated (e.g. when posts are created with wp_insert_post()
+			// Only in this case, the sitepress cache will be cleared so we can read the element language details
+			if ( !$language_details ) {
+				$sitepress->get_translations_cache()->clear();
+				$language_details = $sitepress->get_element_language_details( $pidd, 'post_' . $post_type );
+			}
+			if ( $language_details ) {
+				self::duplicate_post_attachments( $pidd, $icl_trid, $language_details->source_language_code, $language_details->language_code );
+			}
+		}
+	}
+
+	public static function duplicate_post_attachments( $pidd, $icl_trid, $source_lang = null, $lang = null ) {
+		global $wpdb;
+
+		if ( $icl_trid == "" ) {
+			return;
+		}
+
+		if ( !$source_lang ) {
+			$source_lang_prepared = $wpdb->prepare( "SELECT source_language_code FROM {$wpdb->prefix}icl_translations WHERE element_id = %d AND trid=%d", array($pidd, $icl_trid));
+			$source_lang = $wpdb->get_var( $source_lang_prepared );
+		}
+		
+		if ( $source_lang == null || $source_lang == "" ) {
+			// This is the original see if we should copy to translations
+
+            if ( get_post_meta( $pidd, '_wpml_media_duplicate', true ) ) {
+				$translations_prepared = $wpdb->prepare("SELECT element_id FROM {$wpdb->prefix}icl_translations WHERE trid = %d", array($icl_trid));
+				$translations = $wpdb->get_col( $translations_prepared );
+
+				foreach ( $translations as $element_id ) {
+					if ( $element_id && $element_id != $pidd && ! get_post_meta( $element_id, '_icl_lang_duplicate_of', true ) && get_post_meta( $element_id, '_wpml_media_duplicate', true ) ) {
+
+						$lang_prepared = $wpdb->prepare( "SELECT language_code FROM {$wpdb->prefix}icl_translations WHERE element_id = %d AND trid = %d", array($element_id, $icl_trid ));
+						$lang = $wpdb->get_var( $lang_prepared );
+						self::duplicate_post_images($pidd, $element_id, $lang);
+					}
+				}
+			}
+		} else {
+			// This is a translation.
+			// exception for making duplicates. language info not set when this runs and creating the duplicated posts 2/3
+			$source_id_prepared = $wpdb->prepare("SELECT element_id FROM {$wpdb->prefix}icl_translations WHERE language_code = %s AND trid = %d", array($source_lang, $icl_trid));
+			$source_id = $wpdb->get_var( $source_id_prepared );
+		
+			if ( !$lang ) {
+				$lang_prepared = $wpdb->prepare( "SELECT language_code FROM {$wpdb->prefix}icl_translations WHERE element_id = %d AND trid = %d", array($pidd, $icl_trid));
+				$lang = $wpdb->get_var( $lang_prepared );
+			}
+
+			$duplicate = get_post_meta( $pidd, '_wpml_media_duplicate', true );
+			if ( !$duplicate ) {
+				// check the original state
+				$duplicate = get_post_meta( $source_id, '_wpml_media_duplicate', true );
+			}
+
+			if ( $duplicate ) {
+				// Duplicate post images
+				self::duplicate_post_images($source_id, $pidd, $lang);
+			}
+		}
 	}
 }
