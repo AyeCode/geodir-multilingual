@@ -65,6 +65,7 @@ class GeoDir_Multilingual_WPML {
 		add_action( 'geodir_after_count_terms', array( __CLASS__, 'after_count_terms' ), -100, 3 );
 		add_action( 'save_post', array( __CLASS__, 'setup_save_post' ), 0, 3 );
 		add_action( 'save_post', array( __CLASS__, 'wpml_media_duplicate' ), 101, 2 );
+		add_action( 'icl_post_languages_options_after', array( __CLASS__, 'setup_copy_from_original' ), 10, 1 );
 
 		if ( $sitepress->get_setting( 'sync_comments_on_duplicates' ) ) {
             add_action( 'comment_post', array( __CLASS__, 'sync_comment' ), 100, 1 );
@@ -989,34 +990,8 @@ class GeoDir_Multilingual_WPML {
 		return apply_filters( 'wpml_translate_single_string', $string, $domain, $name, $language_code );
 	}
 
-	public static function posts_join( $join, $query ) {
-		global $wpdb, $geodir_post_type, $wpml_query_filter;
-
-		if ( ! empty( $wpml_query_filter ) && self::is_translated_post_type( $geodir_post_type ) ) {
-			$join = $wpml_query_filter->filter_single_type_join( $join, $geodir_post_type );
-		}
-
-		return $join;
-	}
-
-	public static function posts_where( $where, $query ) {
-		global $geodir_post_type, $wpml_query_filter;
-
-		if ( ! empty( $_REQUEST['stype'] ) && geodir_is_page( 'search' ) ) {
-			$post_type = sanitize_text_field( $_REQUEST['stype'] );
-		} else {
-			$post_type = $geodir_post_type;
-		}
-
-		if ( ! empty( $wpml_query_filter ) && self::is_translated_post_type( $geodir_post_type ) ) {
-			$where = $wpml_query_filter->filter_single_type_where( $where, $geodir_post_type );
-		}
-
-		return $where;
-	}
-
-	public static function widget_posts_join( $join, $post_type ) {
-		global $wpdb, $wpml_query_filter;;
+	public static function filter_single_type_join( $join, $post_type ) {
+		global $wpml_query_filter;
 
 		if ( ! empty( $wpml_query_filter ) && self::is_translated_post_type( $post_type ) ) {
 			$join = $wpml_query_filter->filter_single_type_join( $join, $post_type );
@@ -1025,11 +1000,59 @@ class GeoDir_Multilingual_WPML {
 		return $join;
 	}
 
-	public static function widget_posts_where( $where, $post_type ) {
+	public static function filter_single_type_where( $where, $post_type ) {
 		global $wpml_query_filter;
 
 		if ( ! empty( $wpml_query_filter ) && self::is_translated_post_type( $post_type ) ) {
 			$where = $wpml_query_filter->filter_single_type_where( $where, $post_type );
+		}
+
+		return $where;
+	}
+
+	public static function posts_join( $join, $query ) {
+		global $wpdb, $geodir_post_type, $wpml_query_filter;
+
+		if ( ! empty( $_REQUEST['stype'] ) && geodir_is_page( 'search' ) ) {
+			$post_type = sanitize_text_field( $_REQUEST['stype'] );
+		} else {
+			$post_type = $geodir_post_type;
+		}
+
+		if ( $post_type ) {
+			$join = self::filter_single_type_join( $join, $post_type );
+		}
+
+		return $join;
+	}
+
+	public static function posts_where( $where, $query ) {
+		global $geodir_post_type;
+
+		if ( ! empty( $_REQUEST['stype'] ) && geodir_is_page( 'search' ) ) {
+			$post_type = sanitize_text_field( $_REQUEST['stype'] );
+		} else {
+			$post_type = $geodir_post_type;
+		}
+
+		if ( $post_type ) {
+			$where = self::filter_single_type_where( $where, $post_type );
+		}
+
+		return $where;
+	}
+
+	public static function widget_posts_join( $join, $post_type ) {
+		if ( $post_type ) {
+			$join = self::filter_single_type_join( $join, $post_type );
+		}
+
+		return $join;
+	}
+
+	public static function widget_posts_where( $where, $post_type ) {
+		if ( $post_type ) {
+			$where = self::filter_single_type_where( $where, $post_type );
 		}
 
 		return $where;
@@ -1046,8 +1069,28 @@ class GeoDir_Multilingual_WPML {
 		return $post_lang;
 	}
 
+	public static function get_save_post_trid( $post ) {
+		global $sitepress;
+
+		$post_id     = isset( $post->ID ) ? $post->ID : 0;
+		$post_status = isset( $post->post_status ) ? $post->post_status : '';
+
+		return $sitepress->post_translations()->get_save_post_trid( $post_id, $post_status );
+	}
+
+	public static function get_post_source_lang_code( $post_ID ) {
+		global $sitepress;
+
+		$post_lang = $post_ID ? $sitepress->post_translations()->get_source_lang_code( $post_ID ) : self::get_current_language();
+		if ( ! $post_lang ) {
+			$post_lang = $sitepress->post_translations()->get_save_post_lang( $post_ID, $sitepress );
+		}
+
+		return $post_lang;
+	}
+
 	public static function unique_post_slug_posts_join( $join, $post_ID, $post_type ) {
-		global $wpdb, $sitepress;
+		global $wpdb;
 
 		if ( empty( $post_ID ) || empty( $post_type ) ) {
 			return $join;
@@ -1075,7 +1118,7 @@ class GeoDir_Multilingual_WPML {
 	}
 
 	public static function unique_post_slug_terms_join( $join, $post_ID, $post_type ) {
-		global $wpdb, $sitepress;
+		global $wpdb;
 
 		if ( empty( $post_ID ) || empty( $post_type ) ) {
 			return $join;
@@ -1306,6 +1349,10 @@ class GeoDir_Multilingual_WPML {
 
 	public static function copy_from_original_custom_fields( $builtin_custom_fields ) {
 		global $wpdb;
+		if ( empty( $_REQUEST['has_gd'] ) ) {
+			return $builtin_custom_fields;
+		}
+		$builtin_custom_fields = array();
 
 		$trid = filter_input( INPUT_POST, 'trid' );
 		$content_type = filter_input( INPUT_POST, 'content_type' );
@@ -1339,8 +1386,38 @@ class GeoDir_Multilingual_WPML {
 			$field_type = $field['field_type'];
 			$name = $field['htmlvar_name'];
 
+			if ( in_array( $name, array( 'post_images', 'fieldset' ) ) ) {
+				continue;
+			}
+			$extra_fields = !empty($field['extra_fields']) ? maybe_unserialize($field['extra_fields']) : NULL;
+			geodir_error_log( $field, 'field', __FILE__, __LINE__ );
+
 			switch ( $field_type ) {
-                case 'address':
+                 case 'multiselect':
+					$multi_display_type = isset($extra_fields['multi_display_type']) ? $extra_fields['multi_display_type'] : 'select';
+					$values = ! empty( $gd_post->{$name} ) ? explode( ',', $gd_post->{$name} ) : array();
+					if ( $multi_display_type == 'radio' ) {
+						$editor_type = 'radio';
+					} else if ( $multi_display_type == 'checkbox' ) {
+						$editor_type = 'checkboxes';
+					} else {
+						$editor_type = 'select';
+					}
+
+					$fields[ $name ] = array(
+						'editor_name' => $name,
+						'editor_type' => 'multiselect',
+						'value'       => $values
+					);
+
+					break;
+				case 'select':
+					$fields[ $name ] = array(
+						'editor_name' => $name,
+						'editor_type' => 'select',
+						'value'       => isset ( $gd_post->{$name} ) ? $gd_post->{$name} : ''
+					);
+				case 'address':
 					$address_fields = array( 'street', 'country', 'region', 'city', 'zip', 'latitude', 'longitude', 'mapview', 'mapzoom' );
 
 					foreach ( $address_fields as $key ) {
@@ -1374,7 +1451,7 @@ class GeoDir_Multilingual_WPML {
 		if ( ! empty( $fields ) && is_array( $fields ) ) {
 			$builtin_custom_fields = array_merge( $builtin_custom_fields, $fields );
 		}
-
+geodir_error_log( $builtin_custom_fields, 'builtin_custom_fields', __FILE__, __LINE__ );
 		return $builtin_custom_fields;
 	}
 
@@ -1439,7 +1516,7 @@ class GeoDir_Multilingual_WPML {
 
 		// exceptions
 		if (
-			!$sitepress->is_translated_post_type( $post_type )
+			!self::is_translated_post_type( $post_type )
 			|| isset( $_POST[ 'autosave' ] )
 			|| ( isset( $_POST[ 'post_ID' ] ) && $_POST[ 'post_ID' ] != $pidd )
 			|| ( isset( $_POST[ 'post_type' ] ) && $_POST[ 'post_type' ] === 'revision' )
@@ -1523,6 +1600,31 @@ class GeoDir_Multilingual_WPML {
 				// Duplicate post images
 				self::duplicate_post_images($source_id, $pidd, $lang);
 			}
+		}
+	}
+
+	public static function setup_copy_from_original( $post ) {
+		if ( empty( $post ) ) {
+			global $post;
+		}
+
+		if ( empty( $post ) ) {
+			return;
+		}
+
+		if ( ! geodir_is_gd_post_type( $post->post_type ) || ! is_post_type_translated( $post->post_type ) ) {
+			return;
+		}
+
+		$source_lang = filter_var( isset( $_GET['source_lang'] ) ? $_GET['source_lang'] : '', FILTER_SANITIZE_FULL_SPECIAL_CHARS );
+		$source_lang = 'all' === $source_lang ? self::get_default_language() : $source_lang;
+		$lang        = filter_var( isset( $_GET['lang'] ) ? $_GET['lang'] : '', FILTER_SANITIZE_FULL_SPECIAL_CHARS );
+		$source_lang = ! $source_lang && isset( $_GET['post'] ) && $lang !== self::get_default_language() ? self::get_post_source_lang_code( $post->ID ) : $source_lang;
+
+		if ( $source_lang && $source_lang !== $lang ) {
+			$trid = self::get_save_post_trid( $post );
+
+			echo '<input type="hidden" id="geodir_copy_from_original" data-source_lang="' . $source_lang . '" data-trid="' . $trid . '">';
 		}
 	}
 }
