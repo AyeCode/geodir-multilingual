@@ -1349,15 +1349,12 @@ class GeoDir_Multilingual_WPML {
 
 	public static function copy_from_original_custom_fields( $builtin_custom_fields ) {
 		global $wpdb;
-		if ( empty( $_REQUEST['has_gd'] ) ) {
-			return $builtin_custom_fields;
-		}
-		$builtin_custom_fields = array();
 
 		$trid = filter_input( INPUT_POST, 'trid' );
 		$content_type = filter_input( INPUT_POST, 'content_type' );
         $excerpt_type = filter_input( INPUT_POST, 'excerpt_type' );
         $lang = filter_input( INPUT_POST, 'lang' );
+		$post_lang = isset( $_POST[ 'trlang' ] ) ? filter_input( INPUT_POST, 'trlang' ) : self::get_post_language( $trid );
 
 		$post_id = $wpdb->get_var( $wpdb->prepare( "SELECT element_id FROM {$wpdb->prefix}icl_translations WHERE trid=%d AND language_code=%s", $trid, $lang ) );
 		if ( empty( $post_id ) ) {
@@ -1390,35 +1387,62 @@ class GeoDir_Multilingual_WPML {
 				continue;
 			}
 			$extra_fields = !empty($field['extra_fields']) ? maybe_unserialize($field['extra_fields']) : NULL;
-			geodir_error_log( $field, 'field', __FILE__, __LINE__ );
 
 			switch ( $field_type ) {
-                 case 'multiselect':
+				case 'categories':
+					$taxonomy = $post_type . 'category';
+					$cat_display_type = ! empty( $extra_fields['cat_display_type'] ) ? $extra_fields['cat_display_type'] : 'multiselect';
+					$value = ! empty( $gd_post->{$name} ) ? $gd_post->{$name} : '';
+
+					if ( $cat_display_type == 'multiselect' || $cat_display_type == 'checkbox' ) {
+						$editor_type = $cat_display_type == 'checkbox' ? 'multicheckbox' : 'multiselect';
+						$values = ! empty( $value ) ? explode( ',', $value ) : array();
+						$value = array();
+						if ( ! empty( $values ) ) {
+							foreach ( $values as $value_id ) {
+								if ( ! empty( $value_id ) && ( $term_id = apply_filters( 'translate_object_id', (int) $value_id, $taxonomy, false, $post_lang ) ) ) {
+									$value[] = $term_id;
+								}
+							}
+						}
+					} else {
+						$editor_type = $cat_display_type;
+						$value = ! empty( $value ) ? apply_filters( 'translate_object_id', (int) $value, $taxonomy, false, $post_lang ) : '';
+					}
+
+					$fields[ $name ] = array(
+						'editor_name' => $taxonomy,
+						'editor_type' => $editor_type,
+						'value'       => $value
+					);
+					$fields[ 'default_category' ] = array(
+						'editor_name' => 'default_category',
+						'editor_type' => 'text',
+						'value'       => ! empty( $gd_post->default_category ) ? apply_filters( 'translate_object_id', (int) $gd_post->default_category, $taxonomy, false, $post_lang ) : ''
+					);
+					break;
+				case 'multiselect':
 					$multi_display_type = isset($extra_fields['multi_display_type']) ? $extra_fields['multi_display_type'] : 'select';
-					$values = ! empty( $gd_post->{$name} ) ? explode( ',', $gd_post->{$name} ) : array();
+					$value = ! empty( $gd_post->{$name} ) ? explode( ',', $gd_post->{$name} ) : array();
 					if ( $multi_display_type == 'radio' ) {
 						$editor_type = 'radio';
+						$value = ! empty( $value ) ? $value[0] : '';
 					} else if ( $multi_display_type == 'checkbox' ) {
-						$editor_type = 'checkboxes';
+						$editor_type = 'multicheckbox';
 					} else {
-						$editor_type = 'select';
+						$editor_type = 'multiselect';
+						$value = $value;
 					}
 
 					$fields[ $name ] = array(
 						'editor_name' => $name,
-						'editor_type' => 'multiselect',
-						'value'       => $values
+						'editor_type' => $editor_type,
+						'value'       => $value
 					);
 
 					break;
-				case 'select':
-					$fields[ $name ] = array(
-						'editor_name' => $name,
-						'editor_type' => 'select',
-						'value'       => isset ( $gd_post->{$name} ) ? $gd_post->{$name} : ''
-					);
 				case 'address':
-					$address_fields = array( 'street', 'country', 'region', 'city', 'zip', 'latitude', 'longitude', 'mapview', 'mapzoom' );
+					$address_fields = array( 'street', 'country', 'region', 'city', 'neighbourhood', 'zip', 'latitude', 'longitude', 'mapview', 'mapzoom' );
 
 					foreach ( $address_fields as $key ) {
 						$fields[ $key ] = array(
@@ -1429,6 +1453,13 @@ class GeoDir_Multilingual_WPML {
 					}
 
 					break;
+				case 'checkbox':
+					$fields[ $name ] = array(
+						'editor_name' => $name,
+						'editor_type' => 'checkbox',
+						'value'       => isset ( $gd_post->{$name} ) ? (int) $gd_post->{$name} : 0
+					);
+					break;
 				case 'html':
 					$fields[ $name ] = array(
 						'editor_name' => $name,
@@ -1437,9 +1468,14 @@ class GeoDir_Multilingual_WPML {
 					);
 					break;
 				default:
+					if ( in_array( $field_type, array( 'file', 'radio', 'select', 'business_hours' ) ) ) {
+						$editor_type = $field_type;
+					} else {
+						$editor_type = 'text';
+					}
 					$fields[ $name ] = array(
 						'editor_name' => $name,
-						'editor_type' => 'text',
+						'editor_type' => $editor_type,
 						'value'       => isset ( $gd_post->{$name} ) ? $gd_post->{$name} : ''
 					);
 					break;
@@ -1451,7 +1487,7 @@ class GeoDir_Multilingual_WPML {
 		if ( ! empty( $fields ) && is_array( $fields ) ) {
 			$builtin_custom_fields = array_merge( $builtin_custom_fields, $fields );
 		}
-geodir_error_log( $builtin_custom_fields, 'builtin_custom_fields', __FILE__, __LINE__ );
+
 		return $builtin_custom_fields;
 	}
 
@@ -1624,7 +1660,7 @@ geodir_error_log( $builtin_custom_fields, 'builtin_custom_fields', __FILE__, __L
 		if ( $source_lang && $source_lang !== $lang ) {
 			$trid = self::get_save_post_trid( $post );
 
-			echo '<input type="hidden" id="geodir_copy_from_original" data-source_lang="' . $source_lang . '" data-trid="' . $trid . '">';
+			echo '<input type="hidden" id="geodir_copy_from_original" data-tr_lang="' . self::get_post_language( $post->ID ) . '" data-source_lang="' . $source_lang . '" data-trid="' . $trid . '">';
 		}
 	}
 }
