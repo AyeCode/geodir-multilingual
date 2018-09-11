@@ -21,7 +21,7 @@ class GeoDir_Multilingual_WPML {
 		global $sitepress;
 
 		add_filter( 'icl_ls_languages', array( __CLASS__, 'icl_ls_languages' ), 11, 1 );
-		add_filter( 'geodir_get_page_id', array( __CLASS__, 'get_page_id' ), 10, 3 );
+		add_filter( 'geodir_get_page_id', array( __CLASS__, 'get_page_id' ), 10, 4 );
 		add_filter( 'geodir_post_permalink_structure_cpt_slug', array( __CLASS__, 'post_permalink_structure_cpt_slug' ), 10, 3 );
 		add_filter( 'post_type_archive_link', array( __CLASS__, 'post_type_archive_link' ), 1000, 2 );
 		add_filter( 'geodir_term_link', array( __CLASS__, 'term_link' ), 10, 3 );
@@ -178,7 +178,7 @@ class GeoDir_Multilingual_WPML {
 		return $page_id;
 	}
 
-	public static function get_page_id( $page_id, $page, $translated = true ) {
+	public static function get_page_id( $page_id, $page, $post_type = '', $translated = true ) {
 		if ( $translated ) {
 			$page_id = self::get_object_id( $page_id, 'page', true );
 		}
