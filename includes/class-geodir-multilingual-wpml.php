@@ -67,6 +67,15 @@ class GeoDir_Multilingual_WPML {
 		add_action( 'save_post', array( __CLASS__, 'wpml_media_duplicate' ), 101, 2 );
 		add_action( 'icl_post_languages_options_after', array( __CLASS__, 'setup_copy_from_original' ), 10, 1 );
 
+		add_action( 'geodir_bp_listings_count_where', array( __CLASS__, 'geodir_bp_listings_count_where' ), 10, 2 );
+		add_action( 'geodir_bp_listings_count_join', array( __CLASS__, 'geodir_bp_listings_count_join' ), 10, 2 );
+		add_action( 'geodir_bp_listings_join', array( __CLASS__, 'geodir_bp_listings_join' ), 10, 2 );
+		add_action( 'geodir_bp_listings_where', array( __CLASS__, 'geodir_bp_listings_where' ), 10, 2 );
+		add_action( 'geodir_bp_favorite_count_join', array( __CLASS__, 'geodir_bp_favorite_count_join' ), 10, 2 );
+		add_action( 'geodir_bp_favorite_count_where', array( __CLASS__, 'geodir_bp_favorite_count_where' ), 10, 2 );
+		add_action( 'geodir_bp_reviews_count_join', array( __CLASS__, 'geodir_bp_reviews_count_join' ), 10, 2 );
+		add_action( 'geodir_bp_reviews_count_where', array( __CLASS__, 'geodir_bp_reviews_count_where' ), 10, 2 );
+
 		if ( $sitepress->get_setting( 'sync_comments_on_duplicates' ) ) {
             add_action( 'comment_post', array( __CLASS__, 'sync_comment' ), 100, 1 );
         }
@@ -1663,4 +1672,55 @@ class GeoDir_Multilingual_WPML {
 			echo '<input type="hidden" id="geodir_copy_from_original" data-tr_lang="' . self::get_post_language( $post->ID ) . '" data-source_lang="' . $source_lang . '" data-trid="' . $trid . '">';
 		}
 	}
+
+	public static function geodir_bp_listings_count_join($join, $post_type){
+        global $table_prefix;
+
+	    $join .= " JOIN " . $table_prefix . "icl_translations AS icl_t ON icl_t.element_id = p.ID";
+        return $join;
+    }
+
+    public static function geodir_bp_listings_count_where($where, $post_type){
+        $lang_code = ICL_LANGUAGE_CODE;
+
+        $where .= " AND icl_t.language_code = '" . $lang_code . "' AND icl_t.element_type = 'post_" . $post_type . "'";
+        return $where;
+    }
+
+    public static function geodir_bp_listings_join($join, $post_type){
+        global $table_prefix, $wpdb;
+
+        $join .= " JOIN " . $table_prefix . "icl_translations AS icl_t ON icl_t.element_id = " . $wpdb->posts . ".ID";
+        return $join;
+    }
+
+    public static function geodir_bp_listings_where($where, $post_type){
+        $lang_code = ICL_LANGUAGE_CODE;
+
+        $where .= " AND icl_t.language_code = '" . $lang_code . "' AND icl_t.element_type = 'post_" . $post_type . "'";
+        return $where;
+    }
+
+    public static function geodir_bp_favorite_count_where($where, $post_type){
+        $lang_code = ICL_LANGUAGE_CODE;
+
+        $where .= " AND icl_t.language_code = '" . $lang_code . "' AND icl_t.element_type = 'post_" . $post_type . "'";
+        return $where;
+    }
+
+    public static function geodir_bp_reviews_count_join($join, $post_type){
+        global $table_prefix;
+
+        $join .= " JOIN " . $table_prefix . "icl_translations AS icl_t ON icl_t.element_id = p.ID";
+        return $join;
+    }
+
+    public static function geodir_bp_reviews_count_where($where, $post_type){
+        $lang_code = ICL_LANGUAGE_CODE;
+
+        $where .= " AND icl_t.language_code = '" . $lang_code . "' AND icl_t.element_type = 'post_" . $post_type . "'";
+        return $where;
+    }
+
+
 }
