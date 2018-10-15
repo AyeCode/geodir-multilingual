@@ -79,6 +79,9 @@ class GeoDir_Multilingual_WPML {
 		if ( $sitepress->get_setting( 'sync_comments_on_duplicates' ) ) {
             add_action( 'comment_post', array( __CLASS__, 'sync_comment' ), 100, 1 );
         }
+
+		// Pricing manager
+		add_filter( 'geodir_wpi_allow_invoice_for_listing', array( __CLASS__, 'allow_invoice_for_listing' ), 10, 2 );
 	}
 
 	public static function get_default_language() {
@@ -1722,5 +1725,10 @@ class GeoDir_Multilingual_WPML {
         return $where;
     }
 
-
+	public static function allow_invoice_for_listing( $allow, $post_ID ) {
+		if ( $allow && is_post_type_translated( get_post_type( $post_ID ) ) && get_post_meta( $post_ID, '_icl_lang_duplicate_of', true ) ) {
+			$allow = false; // Do not allow to create invoice for duplicated listing.
+		}
+		return $allow;
+	}
 }
