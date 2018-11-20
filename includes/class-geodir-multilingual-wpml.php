@@ -29,6 +29,8 @@ class GeoDir_Multilingual_WPML {
 		add_filter( 'geodir_posts_where', array( __CLASS__, 'posts_where' ), 10, 2 );
 		add_filter( 'geodir_filter_widget_listings_join', array( __CLASS__, 'widget_posts_join' ), 10, 2 );
 		add_filter( 'geodir_filter_widget_listings_where', array( __CLASS__, 'widget_posts_where' ), 10, 2 );
+		add_filter( 'geodir_rest_markers_query_join', array( __CLASS__, 'rest_markers_query_join' ), 10, 2 );
+		add_filter( 'geodir_rest_markers_query_where', array( __CLASS__, 'rest_markers_query_where' ), 10, 2 );
 		add_filter( 'geodir_filter_query_var_category', array( __CLASS__, 'filter_query_var_categories' ), 10, 2 );
 		add_filter( 'geodir_map_categories_term_id', array( __CLASS__, 'map_categories_term_id' ), 10, 2 );
 		add_filter( 'option_geodir_add_listing_page', array( __CLASS__, 'option_add_listing_page' ), 10, 1 );
@@ -1065,6 +1067,33 @@ class GeoDir_Multilingual_WPML {
 	public static function widget_posts_where( $where, $post_type ) {
 		if ( $post_type ) {
 			$where = self::filter_single_type_where( $where, $post_type );
+		}
+
+		return $where;
+	}
+
+	public static function rest_markers_query_join( $join, $request ) {
+		global $wpdb;
+
+		if ( ! empty( $request['post_type'] ) ) {
+			$wpml_join = self::filter_single_type_join( '', $request['post_type'] );
+			$wpml_join = str_replace( " {$wpdb->posts}.", " p.", $wpml_join );
+
+			$join .= $wpml_join;
+		}
+
+		return $join;
+	}
+
+	public static function rest_markers_query_where( $where, $request ) {
+		global $wpdb;
+
+		if ( ! empty( $request['post_type'] ) ) {
+			$wpml_where = self::filter_single_type_where( '', $request['post_type'] );
+			$wpml_where = str_replace( array( " {$wpdb->posts} p", " p." ), array( " {$wpdb->posts} wpml_p", " wpml_p." ), $wpml_where );
+			$wpml_where = str_replace( " {$wpdb->posts}.", " p.", $wpml_where );
+
+			$where .= $wpml_where;
 		}
 
 		return $where;
