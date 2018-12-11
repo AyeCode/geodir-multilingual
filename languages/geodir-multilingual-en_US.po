@@ -1,9 +1,9 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: GeoDirectory Multilingual 1.0.0-dev\n"
+"Project-Id-Version: GeoDirectory Multilingual 1.0.0.0-beta\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2018-06-02 18:41+0530\n"
-"PO-Revision-Date: 2018-06-02 18:41+0530\n"
+"POT-Creation-Date: 2018-12-11 15:17+0000\n"
+"PO-Revision-Date: 2018-12-11 15:17+0000\n"
 "Last-Translator: \n"
 "Language-Team: AyeCode Ltd <contact@ayecode.io>\n"
 "Language: en_US\n"
@@ -15,8 +15,58 @@ msgstr ""
 "X-Poedit-Basepath: ..\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 "X-Poedit-SourceCharset: UTF-8\n"
-"X-Generator: Poedit 1.8.11\n"
+"X-Generator: Poedit 1.8.7.1\n"
 "X-Poedit-SearchPath-0: .\n"
+
+#: includes/admin/class-geodir-multilingual-admin.php:43
+msgid "WPML"
+msgstr ""
+
+#: includes/admin/class-geodir-multilingual-admin.php:52
+msgid "Enable frontend duplicate?"
+msgstr ""
+
+#: includes/admin/class-geodir-multilingual-admin.php:53
+msgid ""
+"Tick to allow users to translate their listings via WPML duplicate "
+"translation."
+msgstr ""
+
+#: includes/admin/class-geodir-multilingual-admin.php:89
+msgid "GeoDirectory"
+msgstr ""
+
+#: includes/class-geodir-multilingual-wpml.php:802
+msgid "Translate Listing"
+msgstr ""
+
+#: includes/class-geodir-multilingual-wpml.php:804
+msgid "Language"
+msgstr ""
+
+#: includes/class-geodir-multilingual-wpml.php:804
+msgid "Translate"
+msgstr ""
+
+#: includes/class-geodir-multilingual-wpml.php:816
+msgid "(duplicate)"
+msgstr ""
+
+#: includes/class-geodir-multilingual-wpml.php:827
+msgid "Create duplicate"
+msgstr ""
+
+#: includes/class-geodir-multilingual-wpml.php:834
+msgid "Duplicate"
+msgstr ""
+
+#: includes/class-geodir-multilingual-wpml.php:871
+msgid "Translation can be done from original listing only."
+msgstr ""
+
+#: includes/class-geodir-multilingual-wpml.php:874
+msgid "You are not allowed to translate this listing."
+msgstr ""
 
 #: includes/class-geodir-multilingual.php:129
 msgid ""
@@ -29,4 +79,16 @@ msgid ""
 "Your version of PHP is below the minimum PHP version required by "
 "GeoDirectory Multilingual. Please contact your host and request that your "
 "version be upgraded to 5.5 or later."
+msgstr ""
+
+#: includes/widgets/class-geodir-multilingual-widget-post-wpml-translation.php:29
+msgid "GD > Post WPML Translation"
+msgstr ""
+
+#: includes/widgets/class-geodir-multilingual-widget-post-wpml-translation.php:40
+msgid "Title:"
+msgstr ""
+
+#: includes/widgets/class-geodir-multilingual-widget-post-wpml-translation.php:41
+msgid "The widget title."
 msgstr ""
