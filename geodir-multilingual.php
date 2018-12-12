@@ -11,16 +11,16 @@
  * Plugin Name:       GeoDirectory Multilingual
  * Plugin URI:        https://wpgeodirectory.com/downloads/multilingual/
  * Description:       Allows running your directory fully multilingual with GeoDirectory and WPML.
- * Version:           1.0.0-dev
+ * Version:           1.0.0.0-beta
  * Author:            AyeCode Ltd
  * Author URI:        https://wpgeodirectory.com/
  * Requires at least: 4.9
- * Tested up to:      4.9.6
+ * Tested up to:      5.0
  * License:           GPL-2.0+
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
  * Text Domain:       geodir-multilingual
  * Domain Path:       /languages
- * Update URL:        https://wpgeodirectory.com
+ * Update URL:        https://github.com/AyeCode/geodir-multilingual/
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( ! defined( 'GEODIR_MULTILINGUAL_VERSION' ) ) {
-	define( 'GEODIR_MULTILINGUAL_VERSION', '1.0.0-dev' );
+	define( 'GEODIR_MULTILINGUAL_VERSION', '1.0.0.0-beta' );
 }
 
 /**
