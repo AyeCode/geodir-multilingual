@@ -5,7 +5,7 @@ Author URI: https://wpgeodirectory.com/
 Plugin URI: https://wpgeodirectory.com/downloads/multilingual/
 Requires at least: 4.9
 Tested up to: 5.0
-Stable tag: 1.0.0.0-beta
+Stable tag: 2.0.0.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -37,6 +37,10 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 * WPML Media 2.1 or later
 
 == Changelog ==
+
+= 2.0.0.0 =
+* Add update ID so it can be installed from extension screen - ADDED.
+* Version jump to v2 to represent GDv2 compatibility - CHANGED
 
 = 1.0.0.0-beta =
 Initial release.
