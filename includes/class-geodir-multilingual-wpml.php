@@ -23,6 +23,7 @@ class GeoDir_Multilingual_WPML {
 		add_filter( 'icl_ls_languages', array( __CLASS__, 'icl_ls_languages' ), 11, 1 );
 		add_filter( 'geodir_get_page_id', array( __CLASS__, 'get_page_id' ), 10, 4 );
 		add_filter( 'geodir_post_permalink_structure_cpt_slug', array( __CLASS__, 'post_permalink_structure_cpt_slug' ), 10, 3 );
+		add_filter( 'geodir_cpt_permalink_rewrite_slug', array( __CLASS__, 'cpt_permalink_rewrite_slug' ), 10, 3 );
 		add_filter( 'post_type_archive_link', array( __CLASS__, 'post_type_archive_link' ), 1000, 2 );
 		add_filter( 'geodir_term_link', array( __CLASS__, 'term_link' ), 10, 3 );
 		add_filter( 'geodir_posts_join', array( __CLASS__, 'posts_join' ), 10, 2 );
@@ -59,7 +60,7 @@ class GeoDir_Multilingual_WPML {
 		add_filter( 'wpml_copy_from_original_custom_fields', array( __CLASS__, 'copy_from_original_custom_fields' ), 10, 1 );
 		add_filter( 'geodir_cpt_post_type_archive_link_slug', array( __CLASS__, 'post_type_archive_link_slug' ), 10, 3 );
 
-		add_action( 'plugins_loaded', array( __CLASS__, 'ajax_set_guest_lang' ), -1 );
+		add_action( 'sanitize_comment_cookies', array( __CLASS__, 'ajax_set_guest_lang' ), 1 );
 		add_action( 'icl_make_duplicate', array( __CLASS__, 'make_duplicate' ), 11, 4 );
 		add_action( 'geodir_language_file_add_string', array( __CLASS__, 'register_string' ), 10, 1 );
 		add_action( 'geodir_category_imported', array( __CLASS__, 'category_imported' ), 10, 2 );
@@ -84,6 +85,13 @@ class GeoDir_Multilingual_WPML {
 
 		// Pricing manager
 		add_filter( 'geodir_wpi_allow_invoice_for_listing', array( __CLASS__, 'allow_invoice_for_listing' ), 10, 2 );
+
+		// Add rewrite ruless for translated slugs
+		add_action( 'geodir_permalinks_post_rewrite_rule', array( __CLASS__, 'permalinks_post_rewrite_rule' ), 10, 6 );
+		add_action( 'geodir_permalinks_author_rewrite_rule', array( __CLASS__, 'permalinks_author_rewrite_rule' ), 10, 6 );
+		add_action( 'geodir_location_permalinks_post_rewrite_rule', array( __CLASS__, 'location_permalinks_post_rewrite_rule' ), 10, 7 );
+		add_action( 'geodir_location_permalinks_cat_rewrite_rule', array( __CLASS__, 'location_permalinks_cat_rewrite_rule' ), 10, 8 );
+		add_action( 'geodir_location_permalinks_tag_rewrite_rule', array( __CLASS__, 'location_permalinks_tag_rewrite_rule' ), 10, 8 );
 	}
 
 	public static function get_default_language() {
@@ -239,9 +247,11 @@ class GeoDir_Multilingual_WPML {
 	 * @global object $sitepress Sitepress WPML object.
 	 *
 	 */
-	public static function ajax_set_guest_lang() {    
-		if ( wpml_is_ajax() && !is_user_logged_in() ) {
-			if ( empty( $_GET['lang'] ) && !( !empty( $_SERVER['REQUEST_URI'] ) && preg_match( '@\.(css|js|png|jpg|gif|jpeg|bmp)@i', basename( preg_replace( '@\?.*$@', '', $_SERVER['REQUEST_URI'] ) ) ) ) ) {
+	public static function ajax_set_guest_lang() {
+		global $sitepress;
+
+		if ( wpml_is_ajax() && ! is_user_logged_in() ) {
+			if ( ! $sitepress->get_setting( WPML_Cookie_Setting::COOKIE_SETTING_FIELD ) && empty( $_GET['lang'] ) && !( !empty( $_SERVER['REQUEST_URI'] ) && preg_match( '@\.(css|js|png|jpg|gif|jpeg|bmp)@i', basename( preg_replace( '@\?.*$@', '', $_SERVER['REQUEST_URI'] ) ) ) ) ) {
 				global $sitepress;
 				
 				$referer = wp_get_referer();
@@ -325,11 +335,19 @@ class GeoDir_Multilingual_WPML {
 		return $languages;
 	}
 
+	public static function cpt_permalink_rewrite_slug( $slug, $post_type, $post_type_obj ) {
+		if ( is_post_type_translated( $post_type ) && self::is_slug_translation_on( $post_type ) && ( $current_lang = self::get_current_language() ) ) {
+			$slug = self::get_translated_cpt_slug( $slug, $post_type, $current_lang );
+		}
+
+		return $slug;
+	}
+
 	public static function post_permalink_structure_cpt_slug( $cpt_slug, $gd_post, $post_link ) {
 		// Alter the CPT slug if WPML is set to do so
 		if ( !empty( $gd_post ) && !empty( $gd_post->post_type ) && is_post_type_translated( $gd_post->post_type ) ) {
-			if ( self::is_slug_translation_on( $gd_post->post_type ) && ( $language_code = self::get_lang_from_url( $post_link ) ) ) {
-				$cpt_slug = self::translate_slug( $cpt_slug, $gd_post->post_type, $language_code );
+			if ( self::is_slug_translation_on( $gd_post->post_type ) && ( $language_code = self::get_post_language( $gd_post->ID ) ) ) {
+				$cpt_slug = self::get_translated_cpt_slug( $cpt_slug, $gd_post->post_type, $language_code );
 			}
 		}
 
@@ -356,7 +374,7 @@ class GeoDir_Multilingual_WPML {
 				if ( self::is_slug_translation_on( $post_type ) && ( $language_code = self::get_lang_from_url( $link ) ) ) {
 					$org_slug = $slug;
 
-					$slug = self::translate_string( $slug, 'WordPress', 'URL slug: ' . $post_type, $language_code );
+					$slug = self::get_translated_cpt_slug( $slug, $post_type, $language_code );
 
 					if ( ! $slug ) {
 						$slug = $org_slug;
@@ -384,7 +402,7 @@ class GeoDir_Multilingual_WPML {
 			}
 
 			$org_slug = $slug;
-			$slug = self::translate_slug( $slug, $post_type, $language_code );
+			$slug = self::get_translated_cpt_slug( $slug, $post_type, $language_code );
 
 			$term_link = trailingslashit( preg_replace( "/" . preg_quote( $org_slug, "/" ) . "/", $slug, $term_link, 1 ) );
 		}
@@ -1004,6 +1022,32 @@ class GeoDir_Multilingual_WPML {
 		return apply_filters( 'wpml_translate_single_string', $string, $domain, $name, $language_code );
 	}
 
+	public static function get_post_type_slug( $post_type ) {
+		$post_type_object = geodir_post_type_object( $post_type );
+
+		$slug = GeoDir_Post_types::get_rewrite_slug( $post_type, $post_type_obj );
+
+		return $slug;
+	}
+
+	public static function get_translated_cpt_slug( $slug, $post_type, $language = false ) {
+		if ( ! $language ) {
+			$language = self::get_current_language();
+		}
+
+		if ( ! $slug ) {
+			$slug = self::get_post_type_slug( $post_type );
+		}
+
+		if ( apply_filters( 'wpml_slug_translation_available', false ) ) {
+			$translated_slug = apply_filters( 'wpml_get_translated_slug', $slug, $post_type, $language );
+		} else {
+			$translated_slug = self::translate_slug( $slug, $post_type, $language );
+		}
+
+		return $translated_slug;
+	}
+
 	public static function filter_single_type_join( $join, $post_type ) {
 		global $wpml_query_filter;
 
@@ -1543,9 +1587,11 @@ class GeoDir_Multilingual_WPML {
 	}
 
 	public static function post_type_archive_link_slug( $slug, $post_type, $link ) {
+
 		if ( is_post_type_translated( $post_type ) && self::is_slug_translation_on( $post_type ) && ( $language_code = self::get_lang_from_url( $link ) ) ) {
-			$slug = self::translate_slug( $slug, $post_type, $language_code );
+			$slug = self::get_translated_cpt_slug( $slug, $post_type, $language_code );
 		}
+
 		return $slug;
 	}
 
@@ -1759,5 +1805,142 @@ class GeoDir_Multilingual_WPML {
 			$allow = false; // Do not allow to create invoice for duplicated listing.
 		}
 		return $allow;
+	}
+
+	public static function permalinks_post_rewrite_rule( $post_type, $post_type_arr, $geodir_permalinks, $regex_part, $redirect, $after ) {
+		global $sitepress;
+
+		if ( is_post_type_translated( $post_type ) && self::is_slug_translation_on( $post_type ) ) {
+			$slug = $post_type_arr['rewrite']['slug'];
+			$languages = $sitepress->get_active_languages();
+
+			foreach ( $languages as $lang_code => $lang ) {
+				$translated_slug = self::get_translated_cpt_slug( $slug, $post_type, $lang_code );
+
+				if ( $translated_slug != $slug ) {
+					$regex      = '^' . $translated_slug . $regex_part;
+
+					$geodir_permalinks->add_rewrite_rule( $regex, $redirect, $after );
+				}
+			}
+		}
+	}
+
+	public static function location_permalinks_post_rewrite_rule( $post_type, $slug, $cpt_match, $redirect, $cpt_query_vars, $after, $geodir_location_permalinks ) {
+		global $sitepress;
+
+		if ( is_post_type_translated( $post_type ) && self::is_slug_translation_on( $post_type ) ) {
+			$languages = $sitepress->get_active_languages();
+
+			foreach ( $languages as $lang_code => $lang ) {
+				$translated_slug = self::get_translated_cpt_slug( $slug, $post_type, $lang_code );
+
+				if ( $translated_slug != $slug ) {
+					// paged
+					$geodir_location_permalinks->add_rewrite_rule(
+						'^' . $translated_slug . '/' . implode( "", array_fill( 0, count( $cpt_query_vars ) , '([^/]*)/' ) ) . 'page/?([0-9]{1,})/?$',
+						$redirect . implode( '&', $cpt_query_vars ).'&paged=$matches['.$cpt_match.']',
+						$after
+					);
+
+					// non paged
+					$geodir_location_permalinks->add_rewrite_rule(
+						'^' . $translated_slug . '/' . implode( "", array_fill( 0, count( $cpt_query_vars ) , '([^/]*)/' ) ) . '?$',
+						$redirect . implode( '&', $cpt_query_vars ),
+						$after
+					);
+				}
+			}
+		}
+	}
+
+	public static function location_permalinks_cat_rewrite_rule( $post_type, $cpt_slug, $cat_base, $redirect, $cat_match, $cat_query_vars, $after, $geodir_location_permalinks ) {
+		global $sitepress;
+
+		if ( is_post_type_translated( $post_type ) && self::is_slug_translation_on( $post_type ) ) {
+			$languages = $sitepress->get_active_languages();
+
+			foreach ( $languages as $lang_code => $lang ) {
+				$translated_slug = self::get_translated_cpt_slug( $cpt_slug, $post_type, $lang_code );
+
+				if ( $translated_slug != $cpt_slug ) {
+					// paged
+					$geodir_location_permalinks->add_rewrite_rule(
+						'^' . $translated_slug . '/' . $cat_base . implode( "", array_fill( 0, count( $cat_query_vars ) , '([^/]*)/' ) ) . 'page/?([0-9]{1,})/?$',
+						$redirect . implode( '&', $cat_query_vars ).'&paged=$matches['.( $cat_match + 1 ).']',
+						$after
+					);
+					// non paged
+					$geodir_location_permalinks->add_rewrite_rule(
+						'^' . $translated_slug . '/' . $cat_base . implode( "", array_fill( 0, count( $cat_query_vars )  , '([^/]*)/' ) ) . '?$',
+						$redirect . implode( '&', $cat_query_vars ) ,
+						$after
+					);
+				}
+			}
+		}
+	}
+
+	public static function location_permalinks_tag_rewrite_rule( $post_type, $cpt_slug, $tag_base, $redirect, $tag_match, $tag_query_vars, $after, $geodir_location_permalinks ) {
+		global $sitepress;
+
+		if ( is_post_type_translated( $post_type ) && self::is_slug_translation_on( $post_type ) ) {
+			$languages = $sitepress->get_active_languages();
+
+			foreach ( $languages as $lang_code => $lang ) {
+				$translated_slug = self::get_translated_cpt_slug( $cpt_slug, $post_type, $lang_code );
+
+				if ( $translated_slug != $cpt_slug ) {
+					// paged
+					$geodir_location_permalinks->add_rewrite_rule(
+						'^' . $translated_slug . '/' . trailingslashit($tag_base) . implode( "", array_fill( 0, count( $tag_query_vars ) , '([^/]*)/' ) ) . 'page/?([0-9]{1,})/?$',
+						$redirect . implode( '&', $tag_query_vars ).'&paged=$matches['.($tag_match + 1).']',
+						$after
+					);
+					// non pages
+					$geodir_location_permalinks->add_rewrite_rule(
+						'^' . $translated_slug . '/' . trailingslashit($tag_base) . implode( "", array_fill( 0, count( $tag_query_vars ) , '([^/]*)/' ) ) . '?$',
+						$redirect . implode( '&', $tag_query_vars ),
+						$after
+					);
+				}
+			}
+		}
+	}
+
+	public static function permalinks_author_rewrite_rule( $post_type, $post_type_arr, $geodir_permalinks, $cpt_slug, $favs_slug, $favs_slug_arr ) {
+		global $wp_rewrite, $sitepress;
+		
+		if ( is_post_type_translated( $post_type ) && self::is_slug_translation_on( $post_type ) ) {
+			$languages = $sitepress->get_active_languages();
+			$author_base = $wp_rewrite->author_base;
+
+			foreach ( $languages as $lang_code => $lang ) {
+				$translated_slug = self::get_translated_cpt_slug( $cpt_slug, $post_type, $lang_code );
+
+				if ( $translated_slug != $cpt_slug ) {
+					$favs_translated_slug = self::favs_slug( $favs_slug, $post_type, $cpt_slug, $translated_slug, $lang_code );
+
+					// add CPT author rewrite rules
+					$geodir_permalinks->add_rewrite_rule( "^" . $author_base . "/([^/]+)/$translated_slug/?$", 'index.php?author_name=$matches[1]&post_type=' . $post_type, 'top' );
+					$geodir_permalinks->add_rewrite_rule( "^" . $author_base . "/([^/]+)/$translated_slug/page/?([0-9]{1,})/?$", 'index.php?author_name=$matches[1]&post_type=' . $post_type . '&paged=$matches[2]', 'top' );
+
+					// favs
+					if ( $favs_slug != $favs_translated_slug && ! isset( $favs_slug_arr[ $favs_translated_slug ] ) ) { // only add this once unless the favs slug changes per CPT
+						$geodir_permalinks->add_rewrite_rule( "^" . $author_base . "/([^/]+)/$favs_translated_slug/?$", 'index.php?author_name=$matches[1]&gd_favs=1' );
+						$geodir_permalinks->add_rewrite_rule( "^" . $author_base . "/([^/]+)/$favs_translated_slug/page/?([0-9]{1,})/?$", 'index.php?author_name=$matches[1]&gd_favs=1&paged=$matches[2]', 'top');
+					}
+
+					$geodir_permalinks->add_rewrite_rule( "^" . $author_base . "/([^/]+)/$favs_translated_slug/$translated_slug/?$",'index.php?author_name=$matches[1]&gd_favs=1&post_type=' . $post_type, 'top' );
+					$geodir_permalinks->add_rewrite_rule( "^" . $author_base . "/([^/]+)/$favs_translated_slug/$translated_slug/page/?([0-9]{1,})/?$", 'index.php?author_name=$matches[1]&gd_favs=1&post_type=' . $post_type . '&paged=$matches[2]', 'top' );
+
+					$saves_slug_arr[ $favs_translated_slug ] = $favs_translated_slug;
+				}
+			}
+		}
+	}
+
+	public static function favs_slug( $favs_slug, $post_type, $cpt_slug, $translated_slug, $lang_code ) {
+		return apply_filters( 'geodir_wpml_rewrite_favs_slug', $favs_slug, $post_type, $cpt_slug, $translated_slug, $lang_code );
 	}
 }

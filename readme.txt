@@ -38,6 +38,9 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 
 == Changelog ==
 
+= 2.0.0.1 =
+* Listing url goes to 404 for translated slug - FIXED
+
 = 2.0.0.0 =
 * Add update ID so it can be installed from extension screen - ADDED.
 * Version jump to v2 to represent GDv2 compatibility - CHANGED
