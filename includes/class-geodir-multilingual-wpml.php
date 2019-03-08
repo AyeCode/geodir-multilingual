@@ -22,6 +22,7 @@ class GeoDir_Multilingual_WPML {
 
 		add_filter( 'icl_ls_languages', array( __CLASS__, 'icl_ls_languages' ), 11, 1 );
 		add_filter( 'geodir_get_page_id', array( __CLASS__, 'get_page_id' ), 10, 4 );
+		add_filter( 'geodir_is_geodir_page_id', array( __CLASS__, 'is_geodir_page_id' ), 10, 2 );
 		add_filter( 'geodir_post_permalink_structure_cpt_slug', array( __CLASS__, 'post_permalink_structure_cpt_slug' ), 10, 3 );
 		add_filter( 'geodir_cpt_permalink_rewrite_slug', array( __CLASS__, 'cpt_permalink_rewrite_slug' ), 10, 3 );
 		add_filter( 'post_type_archive_link', array( __CLASS__, 'post_type_archive_link' ), 1000, 2 );
@@ -1942,5 +1943,39 @@ class GeoDir_Multilingual_WPML {
 
 	public static function favs_slug( $favs_slug, $post_type, $cpt_slug, $translated_slug, $lang_code ) {
 		return apply_filters( 'geodir_wpml_rewrite_favs_slug', $favs_slug, $post_type, $cpt_slug, $translated_slug, $lang_code );
+	}
+
+	public static function is_geodir_page_id( $is_geodir_page, $id ) {
+		global $geodirectory;
+
+		if ( ! $is_geodir_page && $id ) {
+			$object_id = self::get_original_element_id( (int) $id, 'post_page' );
+
+			if ( ! ( $object_id && $object_id != $id ) ) {
+				return $is_geodir_page;
+			}
+
+			$id = $object_id;
+
+			if ( ! empty( $geodirectory->settings['page_add'] ) && $geodirectory->settings['page_add'] == $id ) {
+				$is_geodir_page = true;
+			} elseif ( ! empty( $geodirectory->settings['page_location'] ) && $geodirectory->settings['page_location'] == $id ) {
+				$is_geodir_page = true;
+			} elseif ( ! empty( $geodirectory->settings['page_search'] ) && $geodirectory->settings['page_search'] == $id ) {
+				$is_geodir_page = true;
+			} elseif ( ! empty( $geodirectory->settings['page_terms_conditions'] ) && $geodirectory->settings['page_terms_conditions'] == $id ) {
+				$is_geodir_page = true;
+			} elseif ( ! empty( $geodirectory->settings['page_details'] ) && $geodirectory->settings['page_details'] == $id ) {
+				$is_geodir_page = true;
+			} elseif ( ! empty( $geodirectory->settings['page_archive'] ) && $geodirectory->settings['page_archive'] == $id ) {
+				$is_geodir_page = true;
+			} elseif ( ! empty( $geodirectory->settings['page_archive_item'] ) && $geodirectory->settings['page_archive_item'] == $id ) {
+				$is_geodir_page = true;
+			} elseif ( geodir_is_cpt_template_page( $id ) ) {
+				$is_geodir_page = true;
+			}
+		}
+
+		return $is_geodir_page;
 	}
 }

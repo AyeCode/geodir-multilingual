@@ -113,7 +113,8 @@ final class GeoDir_Multilingual {
          */
         $locale = apply_filters( 'plugin_locale', $locale, 'geodir-multilingual' );
 
-        load_textdomain( 'geodir-multilingual', WP_LANG_DIR . '/' . 'geodir-multilingual' . '/' . 'geodir-multilingual' . '-' . $locale . '.mo' );
+        unload_textdomain( 'geodir-multilingual' );
+		load_textdomain( 'geodir-multilingual', WP_LANG_DIR . '/' . 'geodir-multilingual' . '/' . 'geodir-multilingual' . '-' . $locale . '.mo' );
         load_plugin_textdomain( 'geodir-multilingual', FALSE, basename( dirname( GEODIR_MULTILINGUAL_PLUGIN_FILE ) ) . '/languages/' );
     }
 
