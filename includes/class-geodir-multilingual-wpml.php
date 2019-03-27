@@ -463,9 +463,12 @@ class GeoDir_Multilingual_WPML {
 				
 				// Duplicate taxonomies
 				self::duplicate_taxonomies($master_post_id, $tr_post_id, $lang);
-				
+
 				// Duplicate post images
 				self::duplicate_post_images($master_post_id, $tr_post_id, $lang);
+
+				// Duplicate post files
+				self::duplicate_post_files($master_post_id, $tr_post_id, $lang);
 			}
 			
 			// Sync post reviews
@@ -593,10 +596,71 @@ class GeoDir_Multilingual_WPML {
 				$image_data = (array)$post_image;
 				unset($image_data['ID']);
 				$image_data['post_id'] = $tr_post_id;
-				
+
 				$wpdb->insert(GEODIR_ATTACHMENT_TABLE, $image_data);
 			}
 			
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Duplicate post files for WPML translation post.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @global object $wpdb WordPress Database object.
+	 *
+	 * @param int $master_post_id Original Post ID.
+	 * @param int $tr_post_id Translation Post ID.
+	 * @param string $lang Language code for translating post.
+	 * @return bool True for success, False for fail.
+	 */
+	public static function duplicate_post_files( $master_post_id, $tr_post_id, $lang ) {
+		global $wpdb;
+
+		$wpdb->query( $wpdb->prepare( "DELETE FROM " . GEODIR_ATTACHMENT_TABLE . " WHERE type != %s AND post_id = %d", array( 'post_images', $tr_post_id ) ) );
+
+		$results = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM " . GEODIR_ATTACHMENT_TABLE . " WHERE type != %s AND post_id = %d ORDER BY menu_order ASC", array( 'post_images', $master_post_id ) ) );
+
+		if ( ! empty( $results ) ) {
+			$wp_upload_dir = wp_upload_dir();
+			$table = geodir_db_cpt_table( get_post_type( $master_post_id ) );
+
+			$attachments = array();
+
+			foreach ( $results as $key => $row ) {
+				$data = (array)$row;
+				unset( $data['ID'] );
+				$data['post_id'] = $tr_post_id;
+
+				if ( $wpdb->insert( GEODIR_ATTACHMENT_TABLE, $data ) && ! empty( $data['type'] ) ) {
+					$attachment = array();
+					$attachment[] = $wp_upload_dir['baseurl'] . $data['file']; // file url
+					$attachment[] = $wpdb->insert_id; // file id
+					$attachment[] = $data['title']; // file title
+					$attachment[] = $data['caption']; // file caption
+
+					if ( ! isset( $attachments[ $data['type'] ] ) ) {
+						$attachments[ $data['type'] ] = array();
+					}
+					$attachments[ $data['type'] ][] = implode( '|', $attachment );
+				}
+			}
+
+			if ( ! empty( $attachments ) ) {
+				$detail_data = array();
+				$value_type = array();
+				foreach ( $attachments as $field => $files ) {
+					$detail_data[ $field ] = implode( ',', $files );
+					$value_type[] = '%s';
+				}
+
+				$wpdb->update( $table, $detail_data, array( 'post_id' => $tr_post_id ), $value_type, array( '%d' ) );
+			}
+
 			return true;
 		}
 
@@ -789,19 +853,19 @@ class GeoDir_Multilingual_WPML {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @global WP_Post|null $post The current post.
+	 * @global object $gd_post GeoDirectory post object.
 	 * @global bool $preview True if the current page is add listing preview page. False if not.
 	 * @global object $sitepress Sitepress WPML object.
 	 *
 	 * @return string Filtered html of the geodir_edit_post_link() function.
 	 */
 	public static function post_detail_duplicates() {
-		global $post, $preview, $sitepress;
+		global $gd_post, $preview, $sitepress;
 
 		$content = '';
 
-		if ( !empty( $post->ID ) && !$preview && geodir_is_page( 'detail' ) && self::is_duplicate_allowed( $post->ID ) ) {
-			$post_id = $post->ID;
+		if ( !empty( $gd_post->ID ) && !$preview && geodir_is_page( 'detail' ) && self::is_duplicate_allowed( $gd_post->ID ) ) {
+			$post_id = $gd_post->ID;
 			$element_type = 'post_' . get_post_type( $post_id );
 			$original_post_id = $sitepress->get_original_element_id( $post_id, $element_type );
 			
@@ -1699,7 +1763,12 @@ class GeoDir_Multilingual_WPML {
 
 						$lang_prepared = $wpdb->prepare( "SELECT language_code FROM {$wpdb->prefix}icl_translations WHERE element_id = %d AND trid = %d", array($element_id, $icl_trid ));
 						$lang = $wpdb->get_var( $lang_prepared );
+
+						// post images
 						self::duplicate_post_images($pidd, $element_id, $lang);
+
+						// post files
+						self::duplicate_post_files($pidd, $element_id, $lang);
 					}
 				}
 			}
@@ -1723,6 +1792,9 @@ class GeoDir_Multilingual_WPML {
 			if ( $duplicate ) {
 				// Duplicate post images
 				self::duplicate_post_images($source_id, $pidd, $lang);
+
+				// Duplicate post files
+				self::duplicate_post_files($source_id, $pidd, $lang);
 			}
 		}
 	}

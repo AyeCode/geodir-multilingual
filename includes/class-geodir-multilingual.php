@@ -159,7 +159,10 @@ final class GeoDir_Multilingual {
 
         require_once( GEODIR_MULTILINGUAL_PLUGIN_DIR . 'includes/functions.php' );
 
-		GeoDir_Multilingual_WPML::init();
+		// Load WPML if installed and active
+		if ( defined( 'ICL_SITEPRESS_VERSION' ) && ! ICL_PLUGIN_INACTIVE && class_exists( 'SitePress' ) && function_exists( 'icl_object_id' ) ) {
+			GeoDir_Multilingual_WPML::init();
+		}
 		GeoDir_Multilingual_AJAX::init();
 
         if ( $this->is_request( 'admin' ) || $this->is_request( 'test' ) || $this->is_request( 'cli' ) ) {
