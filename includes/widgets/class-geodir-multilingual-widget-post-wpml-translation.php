@@ -26,7 +26,7 @@ class GeoDir_Multilingual_Widget_Post_WPML_Translation extends WP_Super_Duper {
             'block-keywords'	=> "['geodir','translate','wpml']",
             'class_name'    	=> __CLASS__,
             'base_id'       	=> 'gd_post_wpml_translation',
-            'name'          	=> __( 'GD > Post WPML Translation', 'geodir-multilingual' ),
+            'name'          	=> __( 'GD > Post WPML Duplicate', 'geodir-multilingual' ),
             'widget_ops'    	=> array(
                 'classname'   		=> 'geodir-post-wpml-translation',
                 'description' 		=> esc_html__( 'Show WPML duplicate translation on the listing detail page.', 'geodir-multilingual' ),
