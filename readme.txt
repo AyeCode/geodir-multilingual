@@ -38,6 +38,9 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 
 == Changelog ==
 
+= 2.0.0.4 =
+* Unable to switch language on search page - FIXED
+
 = 2.0.0.3 =
 * Unable to duplicate custom file fields attachments - FIXED
 
