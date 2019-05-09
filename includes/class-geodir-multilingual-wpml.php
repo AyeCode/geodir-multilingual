@@ -278,10 +278,6 @@ class GeoDir_Multilingual_WPML {
 	 */
 	public static function icl_ls_languages( $languages ) {
 		global $wp_query, $sitepress, $wpml_post_translations, $wpml_term_translations;
-
-		if ( ! geodir_is_geodir_page() ) {
-			return $languages;
-		}
 		
 		if ( geodir_is_page( 'search' ) || geodir_is_page( 'location' ) ) {
 			$current_language = $sitepress->get_current_language();
@@ -1140,10 +1136,9 @@ class GeoDir_Multilingual_WPML {
 	public static function is_slug_translation_on($post_type) {
 		global $sitepress;
 		$settings = $sitepress->get_settings();
-		return isset($settings['posts_slug_translation']['types'][$post_type])
-		&& $settings['posts_slug_translation']['types'][$post_type]
-		&& isset($settings['posts_slug_translation']['on'])
-		&& $settings['posts_slug_translation']['on'];
+		return isset( $settings['posts_slug_translation']['types'][ $post_type ] )
+					&& $settings['posts_slug_translation']['types'][ $post_type ]
+					&& get_option( 'wpml_base_slug_translation' );
 	}
 
 	/**

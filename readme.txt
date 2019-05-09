@@ -38,6 +38,9 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 
 == Changelog ==
 
+= 2.0.0.5 =
+* Sometimes map shows markers from different language - FIXED
+
 = 2.0.0.4 =
 * Unable to switch language on search page - FIXED
 
