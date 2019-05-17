@@ -61,6 +61,7 @@ class GeoDir_Multilingual_WPML {
 		add_filter( 'geodir_restore_locale', array( __CLASS__, 'restore_locale' ), 10, 1 );
 		add_filter( 'wpml_copy_from_original_custom_fields', array( __CLASS__, 'copy_from_original_custom_fields' ), 10, 1 );
 		add_filter( 'geodir_cpt_post_type_archive_link_slug', array( __CLASS__, 'post_type_archive_link_slug' ), 10, 3 );
+		add_filter( 'geodir_rest_url', array( __CLASS__, 'rest_url' ), 10, 4 );
 
 		add_action( 'sanitize_comment_cookies', array( __CLASS__, 'ajax_set_guest_lang' ), 1 );
 		add_action( 'icl_make_duplicate', array( __CLASS__, 'make_duplicate' ), 11, 4 );
@@ -279,10 +280,6 @@ class GeoDir_Multilingual_WPML {
 	public static function icl_ls_languages( $languages ) {
 		global $wp_query, $sitepress, $wpml_post_translations, $wpml_term_translations;
 
-		if ( ! geodir_is_geodir_page() ) {
-			return $languages;
-		}
-		
 		if ( geodir_is_page( 'search' ) || geodir_is_page( 'location' ) ) {
 			$current_language = $sitepress->get_current_language();
 			$default_language = $sitepress->get_default_language();
@@ -1140,10 +1137,9 @@ class GeoDir_Multilingual_WPML {
 	public static function is_slug_translation_on($post_type) {
 		global $sitepress;
 		$settings = $sitepress->get_settings();
-		return isset($settings['posts_slug_translation']['types'][$post_type])
-		&& $settings['posts_slug_translation']['types'][$post_type]
-		&& isset($settings['posts_slug_translation']['on'])
-		&& $settings['posts_slug_translation']['on'];
+		return isset( $settings['posts_slug_translation']['types'][ $post_type ] )
+					&& $settings['posts_slug_translation']['types'][ $post_type ]
+					&& get_option( 'wpml_base_slug_translation' );
 	}
 
 	/**
@@ -2158,5 +2154,26 @@ class GeoDir_Multilingual_WPML {
 		}
 
 		return $is_geodir_page;
+	}
+
+	public static function rest_url( $url, $query_args, $namespace = '', $rest_base = '' ) {
+		if ( $namespace == '' ) {
+			$namespace = GEODIR_REST_SLUG . '/v' . GEODIR_REST_API_VERSION;
+		}
+
+		// Add lang in rest api url.
+		add_filter( 'rest_url', 'wpml_permalink_filter' );
+
+		if ( $rest_base ) {
+			$url = rest_url( sprintf( '%s/%s/', $namespace, $rest_base ) );
+		} else {
+			$url = rest_url( sprintf( '%s/', $namespace ) );
+		}
+
+		if ( ! empty( $query_args ) && is_array( $query_args ) ) {
+			$url = add_query_arg( $query_args, $url );
+		}
+
+		return $url;
 	}
 }
