@@ -1957,7 +1957,14 @@ class GeoDir_Multilingual_WPML {
         return $where;
     }
 
-    public static function geodir_bp_favorite_count_where($where, $post_type){
+    public static function geodir_bp_favorite_count_join($join, $post_type){
+        global $table_prefix, $wpdb;
+
+        $join .= " JOIN " . $table_prefix . "icl_translations AS icl_t ON icl_t.element_id = " . $wpdb->posts . ".ID";
+        return $join;
+    }
+
+	public static function geodir_bp_favorite_count_where($where, $post_type){
         $lang_code = ICL_LANGUAGE_CODE;
 
         $where .= " AND icl_t.language_code = '" . $lang_code . "' AND icl_t.element_type = 'post_" . $post_type . "'";
