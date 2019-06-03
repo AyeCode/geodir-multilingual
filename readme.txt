@@ -40,6 +40,7 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 
 = 2.0.0.6 =
 * Favorites listings count is not working - FIXED
+* Shows wrong term counts for non-default language - FIXED
 
 = 2.0.0.5 =
 * Sometimes map shows markers from different language - FIXED

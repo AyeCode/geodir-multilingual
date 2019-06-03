@@ -72,6 +72,8 @@ class GeoDir_Multilingual_WPML {
 		add_action( 'save_post', array( __CLASS__, 'setup_save_post' ), 0, 3 );
 		add_action( 'save_post', array( __CLASS__, 'wpml_media_duplicate' ), 101, 2 );
 		add_action( 'icl_post_languages_options_after', array( __CLASS__, 'setup_copy_from_original' ), 10, 1 );
+		add_action( 'geodir_location_get_terms_set_globals', array( __CLASS__, 'location_get_terms_set_globals' ), 10, 5 );
+		add_action( 'geodir_location_get_terms_reset_globals', array( __CLASS__, 'location_get_terms_reset_globals' ), 10, 5 );
 
 		add_action( 'geodir_bp_listings_count_where', array( __CLASS__, 'geodir_bp_listings_count_where' ), 10, 2 );
 		add_action( 'geodir_bp_listings_count_join', array( __CLASS__, 'geodir_bp_listings_count_join' ), 10, 2 );
@@ -2182,5 +2184,37 @@ class GeoDir_Multilingual_WPML {
 		}
 
 		return $url;
+	}
+
+	public static function location_get_terms_set_globals( $post_type, $taxonomy, $location_type, $loc, $count_type ) {
+		self::remove_terms_filter();
+	}
+
+	public static function location_get_terms_reset_globals( $post_type, $taxonomy, $location_type, $loc, $count_type ) {
+		self::set_terms_filter();
+	}
+
+	public static function remove_terms_filter() {
+		global $sitepress, $geodir_has_get_terms_args_filter, $geodir_has_get_term_filter, $geodir_has_terms_clauses_filter;
+
+		$geodir_has_get_terms_args_filter = remove_filter( 'get_terms_args', array( $sitepress, 'get_terms_args_filter' ) );
+		$geodir_has_get_term_filter = remove_filter( 'get_term', array( $sitepress, 'get_term_adjust_id' ), 1 );
+		$geodir_has_terms_clauses_filter = remove_filter( 'terms_clauses', array( $sitepress, 'terms_clauses' ) );
+	}
+
+	public static function set_terms_filter() {
+		global $sitepress, $geodir_has_get_terms_args_filter, $geodir_has_get_term_filter, $geodir_has_terms_clauses_filter;
+
+		if ( $geodir_has_get_terms_args_filter ) {
+			add_filter( 'terms_clauses', array( $sitepress, 'terms_clauses' ), 10, 3 );
+		}
+
+		if ( $geodir_has_get_term_filter ) {
+			add_filter( 'get_term', array( $sitepress, 'get_term_adjust_id' ), 1, 1 );
+		}
+
+		if ( $geodir_has_terms_clauses_filter ) {
+			add_filter( 'get_terms_args', array( $sitepress, 'get_terms_args_filter' ), 10, 2 );
+		}
 	}
 }
