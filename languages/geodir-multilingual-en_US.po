@@ -1,9 +1,9 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: GeoDirectory Multilingual 2.0.0.5\n"
+"Project-Id-Version: GeoDirectory Multilingual 2.0.0.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-05-17 12:42+0100\n"
-"PO-Revision-Date: 2019-05-17 12:42+0100\n"
+"POT-Creation-Date: 2019-06-06 18:28+0100\n"
+"PO-Revision-Date: 2019-06-06 18:28+0100\n"
 "Last-Translator: \n"
 "Language-Team: AyeCode Ltd <contact@ayecode.io>\n"
 "Language: en_US\n"
@@ -38,35 +38,35 @@ msgstr ""
 msgid "GeoDirectory"
 msgstr ""
 
-#: includes/class-geodir-multilingual-wpml.php:991
+#: includes/class-geodir-multilingual-wpml.php:993
 msgid "Translate Listing"
 msgstr ""
 
-#: includes/class-geodir-multilingual-wpml.php:993
+#: includes/class-geodir-multilingual-wpml.php:995
 msgid "Language"
 msgstr ""
 
-#: includes/class-geodir-multilingual-wpml.php:993
+#: includes/class-geodir-multilingual-wpml.php:995
 msgid "Translate"
 msgstr ""
 
-#: includes/class-geodir-multilingual-wpml.php:1005
+#: includes/class-geodir-multilingual-wpml.php:1007
 msgid "(duplicate)"
 msgstr ""
 
-#: includes/class-geodir-multilingual-wpml.php:1016
+#: includes/class-geodir-multilingual-wpml.php:1018
 msgid "Create duplicate"
 msgstr ""
 
-#: includes/class-geodir-multilingual-wpml.php:1023
+#: includes/class-geodir-multilingual-wpml.php:1025
 msgid "Duplicate"
 msgstr ""
 
-#: includes/class-geodir-multilingual-wpml.php:1060
+#: includes/class-geodir-multilingual-wpml.php:1062
 msgid "Translation can be done from original listing only."
 msgstr ""
 
-#: includes/class-geodir-multilingual-wpml.php:1063
+#: includes/class-geodir-multilingual-wpml.php:1065
 msgid "You are not allowed to translate this listing."
 msgstr ""
 
