@@ -4,8 +4,8 @@ Tags: geodirectory, geodirectory multilingual, localization, language, multiling
 Author URI: https://wpgeodirectory.com/
 Plugin URI: https://wpgeodirectory.com/downloads/multilingual/
 Requires at least: 4.9
-Tested up to: 5.2.2
-Stable tag: 2.0.0.6
+Tested up to: 5.2
+Stable tag: 2.0.0.7
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
