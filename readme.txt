@@ -40,6 +40,7 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 
 = 2.0.0.8 =
 * Listing featured media duplication with recent WPML version - FIXED
+* Old post shows 404 error if categories translated after posts creation - FIXED
 
 = 2.0.0.7 =
 * GD Archive Item page translation is not working properly - FIXED

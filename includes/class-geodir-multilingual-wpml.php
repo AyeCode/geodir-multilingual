@@ -26,6 +26,7 @@ class GeoDir_Multilingual_WPML {
 		add_filter( 'geodir_is_archive_page_id', array( __CLASS__, 'is_archive_page_id' ), 10, 2 );
 		add_filter( 'geodir_is_geodir_page_id', array( __CLASS__, 'is_geodir_page_id' ), 10, 2 );
 		add_filter( 'geodir_post_permalink_structure_cpt_slug', array( __CLASS__, 'post_permalink_structure_cpt_slug' ), 10, 3 );
+		add_filter( 'geodir_post_url_filter_term', array( __CLASS__, 'post_url_filter_term' ), 10, 3 );
 		add_filter( 'geodir_cpt_permalink_rewrite_slug', array( __CLASS__, 'cpt_permalink_rewrite_slug' ), 10, 3 );
 		add_filter( 'geodir_cpt_template_pages', array( __CLASS__, 'cpt_template_pages' ), 10, 1 );
 		add_filter( 'post_type_archive_link', array( __CLASS__, 'post_type_archive_link' ), 1000, 2 );
@@ -2274,5 +2275,38 @@ class GeoDir_Multilingual_WPML {
 		}
 
 		return $icl_ajx_action;
+	}
+
+	public static function post_url_filter_term( $term, $gd_post, $term_id = 0 ) {
+		global $sitepress;
+
+		if ( ! empty( $term ) && ! is_wp_error( $term ) && ! empty( $gd_post ) && is_taxonomy_translated( $term->taxonomy ) && is_post_type_translated( $gd_post->post_type ) ) {
+			$term_lang = self::get_language_for_element( $term->term_id, 'tax_' . $term->taxonomy );
+
+			if ( $term_id > 0 ) {
+				$to_lang = self::get_language_for_element( $term_id, 'tax_' . $term->taxonomy );
+			} else {
+				$to_lang = self::get_language_for_element( $gd_post->ID, 'post_' . $gd_post->post_type );
+			}
+
+			if ( $term_lang && $term_lang != 'all' && $term_lang != $to_lang ) {
+				$_term_id = self::get_object_id( $term->term_id, $term->taxonomy, true, $to_lang );
+
+				if ( ! empty( $_term_id ) && $_term_id != $term->term_id ) {
+					$has_filter = remove_filter( 'get_term', array( $sitepress, 'get_term_adjust_id' ), 1 );
+
+					$_term = get_term( $_term_id, $term->taxonomy );
+
+					if ( $has_filter ) {
+						add_filter( 'get_term', array( $sitepress, 'get_term_adjust_id' ), 1, 1 );
+					}
+
+					if ( ! empty( $_term ) && ! is_wp_error( $_term ) ) {
+						$term = $_term;
+					}
+				}
+			}
+		}
+		return $term;
 	}
 }
