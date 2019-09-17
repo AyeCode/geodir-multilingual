@@ -26,6 +26,7 @@ class GeoDir_Multilingual_WPML {
 		add_filter( 'geodir_is_archive_page_id', array( __CLASS__, 'is_archive_page_id' ), 10, 2 );
 		add_filter( 'geodir_is_geodir_page_id', array( __CLASS__, 'is_geodir_page_id' ), 10, 2 );
 		add_filter( 'geodir_post_permalink_structure_cpt_slug', array( __CLASS__, 'post_permalink_structure_cpt_slug' ), 10, 3 );
+		add_filter( 'geodir_post_url_filter_term', array( __CLASS__, 'post_url_filter_term' ), 10, 3 );
 		add_filter( 'geodir_cpt_permalink_rewrite_slug', array( __CLASS__, 'cpt_permalink_rewrite_slug' ), 10, 3 );
 		add_filter( 'geodir_cpt_template_pages', array( __CLASS__, 'cpt_template_pages' ), 10, 1 );
 		add_filter( 'post_type_archive_link', array( __CLASS__, 'post_type_archive_link' ), 1000, 2 );
@@ -565,12 +566,12 @@ class GeoDir_Multilingual_WPML {
 	public static function duplicate_listing($post_id, $request_info) {
 		global $sitepress;
 		
-		$icl_ajx_action = !empty($_REQUEST['icl_ajx_action']) && $_REQUEST['icl_ajx_action'] == 'make_duplicates' ? true : false;
+		$icl_ajx_action = self::icl_ajx_action() == 'make_duplicates' ? true : false;
 		if (!empty($_REQUEST['action']) && $_REQUEST['action'] == 'wpml_duplicate_dashboard' && !empty($_REQUEST['duplicate_post_ids'])) {
 			$icl_ajx_action = true;
 		}
 		
-		if (!$icl_ajx_action && in_array(get_post_type($post_id), geodir_get_posttypes()) && $post_duplicates = $sitepress->get_duplicates($post_id)) {
+		if (!$icl_ajx_action && geodir_is_gd_post_type( get_post_type( $post_id ) ) && $post_duplicates = $sitepress->get_duplicates($post_id)) {
 			foreach ($post_duplicates as $lang => $dup_post_id) {
 				self::make_duplicate($post_id, $lang, $request_info, $dup_post_id, true);
 			}
@@ -593,7 +594,7 @@ class GeoDir_Multilingual_WPML {
 		global $sitepress, $geodir_wpml_after_save;
 		
 		$post_type = get_post_type($master_post_id);
-		$icl_ajx_action = !empty($_REQUEST['icl_ajx_action']) && ( $_REQUEST['icl_ajx_action'] == 'make_duplicates' || $_REQUEST['icl_ajx_action'] == 'set_duplication' ) ? true : false;
+		$icl_ajx_action = self::icl_ajx_action() == 'make_duplicates' || self::icl_ajx_action() == 'set_duplication' ? true : false;
 		if (!empty($_REQUEST['action']) && $_REQUEST['action'] == 'wpml_duplicate_dashboard' && !empty($_REQUEST['duplicate_post_ids'])) {
 			$icl_ajx_action = true;
 		}
@@ -1193,7 +1194,7 @@ class GeoDir_Multilingual_WPML {
 		
 		$post_type = !empty($_REQUEST['post_type']) ? $_REQUEST['post_type'] : (!empty($_REQUEST['post']) ? get_post_type($_REQUEST['post']) : '');
 		
-		if (!empty($sitepress) && $sitepress->is_post_edit_screen() && $post_type && in_array($post_type, geodir_get_posttypes()) && $current_lang = $sitepress->get_current_language()) {
+		if (!empty($sitepress) && $sitepress->is_post_edit_screen() && $post_type && geodir_is_gd_post_type( $post_type ) && $current_lang = $sitepress->get_current_language()) {
 			$locale = $sitepress->get_locale($current_lang);
 		}
 		
@@ -1615,7 +1616,7 @@ class GeoDir_Multilingual_WPML {
 	}
 
 	public static function allow_frontend_duplicate( $post_type ) {
-		$post_types = $post_types = geodir_get_posttypes( 'array' );
+		$post_types = geodir_get_posttypes( 'array' );
 
 		if ( ! empty( $post_types ) && ! empty( $post_types[$post_type]['wpml_duplicate'] ) ) {
 			$allow = true;
@@ -1810,7 +1811,7 @@ class GeoDir_Multilingual_WPML {
 	public static function wpml_media_duplicate( $pidd, $post ) {
 		global $wpdb, $sitepress;
 
-		$request_post_icl_ajx_action = filter_input(INPUT_POST, 'icl_ajx_action', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_NULL_ON_FAILURE);
+		$request_post_icl_ajx_action = self::icl_ajx_action();
 
 		if ( empty( $pidd ) || empty( $post ) || $request_post_icl_ajx_action == 'make_duplicates' || get_post_meta( $pidd, '_icl_lang_duplicate_of', true ) ) {
 			return;
@@ -2262,5 +2263,50 @@ class GeoDir_Multilingual_WPML {
 		if ( $geodir_has_terms_clauses_filter ) {
 			add_filter( 'get_terms_args', array( $sitepress, 'get_terms_args_filter' ), 10, 2 );
 		}
+	}
+
+	public static function icl_ajx_action() {
+		$icl_ajx_action = '';
+
+		if ( ! empty( $_REQUEST['icl_ajx_action'] ) ) {
+			$icl_ajx_action = sanitize_text_field( $_REQUEST['icl_ajx_action'] );
+		} elseif ( ! empty( $_REQUEST['action'] ) && wpml_is_ajax() ) {
+			$icl_ajx_action = sanitize_text_field( $_REQUEST['action'] );
+		}
+
+		return $icl_ajx_action;
+	}
+
+	public static function post_url_filter_term( $term, $gd_post, $term_id = 0 ) {
+		global $sitepress;
+
+		if ( ! empty( $term ) && ! is_wp_error( $term ) && ! empty( $gd_post ) && is_taxonomy_translated( $term->taxonomy ) && is_post_type_translated( $gd_post->post_type ) ) {
+			$term_lang = self::get_language_for_element( $term->term_id, 'tax_' . $term->taxonomy );
+
+			if ( $term_id > 0 ) {
+				$to_lang = self::get_language_for_element( $term_id, 'tax_' . $term->taxonomy );
+			} else {
+				$to_lang = self::get_language_for_element( $gd_post->ID, 'post_' . $gd_post->post_type );
+			}
+
+			if ( $term_lang && $term_lang != 'all' && $term_lang != $to_lang ) {
+				$_term_id = self::get_object_id( $term->term_id, $term->taxonomy, true, $to_lang );
+
+				if ( ! empty( $_term_id ) && $_term_id != $term->term_id ) {
+					$has_filter = remove_filter( 'get_term', array( $sitepress, 'get_term_adjust_id' ), 1 );
+
+					$_term = get_term( $_term_id, $term->taxonomy );
+
+					if ( $has_filter ) {
+						add_filter( 'get_term', array( $sitepress, 'get_term_adjust_id' ), 1, 1 );
+					}
+
+					if ( ! empty( $_term ) && ! is_wp_error( $_term ) ) {
+						$term = $_term;
+					}
+				}
+			}
+		}
+		return $term;
 	}
 }
