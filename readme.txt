@@ -38,6 +38,9 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 
 == Changelog ==
 
+= 2.0.0.9 =
+* Rewrite rules conflict with trasnlated location page slug - FIXED
+
 = 2.0.0.8 =
 * Listing featured media duplication with recent WPML version - FIXED
 * Old post shows 404 error if categories translated after posts creation - FIXED

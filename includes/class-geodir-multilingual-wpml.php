@@ -100,6 +100,10 @@ class GeoDir_Multilingual_WPML {
 		add_action( 'geodir_location_permalinks_post_rewrite_rule', array( __CLASS__, 'location_permalinks_post_rewrite_rule' ), 10, 7 );
 		add_action( 'geodir_location_permalinks_cat_rewrite_rule', array( __CLASS__, 'location_permalinks_cat_rewrite_rule' ), 10, 8 );
 		add_action( 'geodir_location_permalinks_tag_rewrite_rule', array( __CLASS__, 'location_permalinks_tag_rewrite_rule' ), 10, 8 );
+
+		// Disable "Use WPML's Translation Editor" for GD CPTs
+		add_filter( 'get_post_metadata', array( __CLASS__, 'get_post_metadata' ), 100, 4 );
+		add_filter( 'rewrite_rules_array', array( __CLASS__, 'rewrite_rules_array' ), 11, 1 );
 	}
 
 	public static function get_default_language() {
@@ -2308,5 +2312,69 @@ class GeoDir_Multilingual_WPML {
 			}
 		}
 		return $term;
+	}
+
+	/**
+	 * Filter & disable "Use WPML's Translation Editor" for GD CPTs.
+	 *
+	 * @since 2.0.0.8
+	 *
+	 * @param null|array|string $value     The value get_metadata() should return - a single metadata value,
+	 *                                     or an array of values.
+	 * @param int               $object_id Object ID.
+	 * @param string            $meta_key  Meta key.
+	 * @param bool              $single    Whether to return only the first value of the specified $meta_key.
+	 * @return mixed Single metadata value, or array of values.
+	 */
+	public static function get_post_metadata( $value, $object_id, $meta_key, $single ) {
+		if ( $meta_key == '_wpml_post_translation_editor_native' && ! empty( $object_id ) && geodir_is_gd_post_type( get_post_type( $object_id ) ) ) {
+			$value = 'yes';
+		}
+
+		return $value;
+	}
+
+	/**
+	 * @since 2.0.0.9
+	 */
+	public static function rewrite_rules_array( $rules ) {
+		global $sitepress;
+
+		$element_type = 'post_page';
+		$page_id = geodir_get_option( 'page_location' );
+		$trid = $sitepress->get_element_trid( $page_id, $element_type );
+		$translations = $sitepress->get_element_translations( $trid, $element_type );
+
+		if ( ! empty( $translations ) ) {
+			$post_name = get_post_field( 'post_name', $page_id );
+			$_rules = array();
+
+			foreach ( $rules as $key => $rule ) {
+				$_rules[ $key ] = $rule;
+
+				if ( strpos( $key, '^' . $post_name . '/' ) === false ) {
+					continue;
+				}
+
+				foreach ( $translations as $lang => $translation ) {
+					if ( $translation->element_id != $page_id ) {
+						$tr_post_name = get_post_field( 'post_name', $translation->element_id );
+
+						if ( $tr_post_name && $tr_post_name != $post_name ) {
+							$tr_key = str_replace( '^' . $post_name . '/', '^' . $tr_post_name . '/', $key );
+							$tr_rule = str_replace( 'pagename=' . $post_name . '&', 'pagename=' . $tr_post_name . '&', $rule );
+
+							if ( ! isset( $rules[ $tr_key ] ) ) {
+								$_rules[ $tr_key ] = $tr_rule;
+							}
+						}
+					}
+				}
+			}
+
+			$rules = $_rules;
+		}
+
+		return $rules;
 	}
 }
