@@ -23,6 +23,7 @@ class GeoDir_Multilingual_WPML {
 		add_filter( 'icl_ls_languages', array( __CLASS__, 'icl_ls_languages' ), 11, 1 );
 		add_filter( 'icl_lang_sel_copy_parameters', array( __CLASS__, 'icl_lang_sel_copy_parameters' ), 11, 1 );
 		add_filter( 'geodir_get_page_id', array( __CLASS__, 'get_page_id' ), 10, 4 );
+		add_filter( 'geodir_get_noindex_page_ids', array( __CLASS__, 'get_noindex_page_ids' ), 10, 1 );
 		add_filter( 'geodir_is_archive_page_id', array( __CLASS__, 'is_archive_page_id' ), 10, 2 );
 		add_filter( 'geodir_is_geodir_page_id', array( __CLASS__, 'is_geodir_page_id' ), 10, 2 );
 		add_filter( 'geodir_post_permalink_structure_cpt_slug', array( __CLASS__, 'post_permalink_structure_cpt_slug' ), 10, 3 );
@@ -2376,5 +2377,33 @@ class GeoDir_Multilingual_WPML {
 		}
 
 		return $rules;
+	}
+
+	/**
+	 * @since 2.0.0.9
+	 */
+	public static function get_noindex_page_ids( $page_ids ) {
+		if ( ! is_array( $page_ids ) ) {
+			$page_ids = array();
+		}
+
+		$_page_ids = array();
+		$_page_ids[] = geodir_get_page_id( 'details', '', false ); // Details page
+		$_page_ids[] = geodir_get_page_id( 'archive', '', false ); // Archive page
+		$_page_ids[] = geodir_get_page_id( 'archive_item', '', false ); // Archive item page
+
+		foreach ( $_page_ids as $page_id ) {
+			if ( empty( $page_id ) ) {
+				continue;
+			}
+
+			$tr_page_ids = self::get_element_ids( $page_id, 'post_page' );
+
+			if ( ! empty( $tr_page_ids ) && is_array( $tr_page_ids ) ) {
+				$page_ids = array_merge( $page_ids, $tr_page_ids );
+			}
+		}
+
+		return array_unique( $page_ids );
 	}
 }
