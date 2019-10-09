@@ -105,6 +105,11 @@ class GeoDir_Multilingual_WPML {
 		// Disable "Use WPML's Translation Editor" for GD CPTs
 		add_filter( 'get_post_metadata', array( __CLASS__, 'get_post_metadata' ), 100, 4 );
 		add_filter( 'rewrite_rules_array', array( __CLASS__, 'rewrite_rules_array' ), 11, 1 );
+		
+		// Import / Export
+		add_action( 'geodir_import_post_before',  array( __CLASS__, 'import_post_before' ), 10, 1 );
+		add_action( 'geodir_import_post_after',  array( __CLASS__, 'import_post_after' ), 10, 2 );
+		add_filter( 'geodir_save_post_temp_data',  array( __CLASS__, 'save_post_temp_data' ), 1, 3 );
 	}
 
 	public static function get_default_language() {
@@ -1498,16 +1503,18 @@ class GeoDir_Multilingual_WPML {
 
 	public static function export_posts_csv_columns( $row, $post_type ) {
 		if ( is_post_type_translated( $post_type ) ) {
-			$row[] = 'language';
-			$row[] = 'original_post_id';
+			$row[] = 'wpml_lang';
+			$row[] = 'wpml_translation_of';
+			$row[] = 'wpml_is_duplicate';
 		}
 		return $row;
 	}
 
-	public static function export_posts_csv_row( $row, $term_id, $post_type ) {
+	public static function export_posts_csv_row( $row, $post_id, $post_type ) {
 		if ( is_post_type_translated( $post_type ) ) {
-			$row[] = self::get_language_for_element( $term_id, 'post_' . $post_type );
-			$row[] = self::get_original_element_id( $term_id, 'post_' . $post_type );
+			$row[] = self::get_language_for_element( $post_id, 'post_' . $post_type ); // wpml_lang
+			$row[] = self::get_original_element_id( $post_id, 'post_' . $post_type ); // wpml_translation_of
+			$row[] = absint( get_post_meta( $post_id, '_icl_lang_duplicate_of', true ) ) ? 1 : '0'; // wpml_is_duplicate
 		}
 		return $row;
 	}
@@ -2405,5 +2412,61 @@ class GeoDir_Multilingual_WPML {
 		}
 
 		return array_unique( $page_ids );
+	}
+
+	/**
+	 * @since 2.0.0.68
+	 */
+	public static function import_post_before( $gd_post ) {
+		global $gd_wpml_switch_post_lang;
+
+		$gd_wpml_switch_post_lang = -1;
+
+		if ( ! empty( $gd_post['post_type'] ) && is_post_type_translated( $gd_post['post_type'] ) && ( ! empty( $gd_post['wpml_lang'] ) || ! empty( $gd_post['wpml_translation_of'] ) ) ) {
+			$post_id = ! empty( $gd_post['ID'] ) ? absint( $gd_post['ID'] ) : 0;
+			$post_lang = $post_id ? self::get_post_language( $post_id ) : '';
+			$wpml_lang = isset( $gd_post['wpml_lang'] ) ? $gd_post['wpml_lang'] : $post_lang;
+
+			$gd_wpml_switch_post_lang = self::switch_lang( $wpml_lang );
+		}
+	}
+
+	/**
+	 * @since 2.0.0.68
+	 */
+	public static function import_post_after( $gd_post, $success = false ) {
+		global $gd_wpml_switch_post_lang;
+
+		if ( $gd_wpml_switch_post_lang !== -1 ) {
+			self::switch_lang( $gd_wpml_switch_post_lang );
+		}
+	}
+
+	/**
+	 * @since 2.0.0.68
+	 */
+	public static function save_post_temp_data( $gd_post, $post, $update ) {
+		global $sitepress, $gd_wpml_switch_post_lang;
+
+		if ( $gd_wpml_switch_post_lang !== -1 && ! empty( $gd_post['post_type'] ) && ! empty( $post->ID ) && $gd_post['post_type'] == $post->post_type && is_post_type_translated( $gd_post['post_type'] ) ) {
+			if ( ! empty( $gd_post['wpml_translation_of'] ) && ( $translation_of = absint( $gd_post['wpml_translation_of'] ) ) ) {
+				$source_lang = self::get_post_language( $translation_of );
+				$post_lang = self::get_post_language( $post->ID );
+				$trid = $sitepress->get_element_trid( $translation_of, 'post_' . $gd_post['post_type'] );
+
+				// Set/unset duplicate
+				if ( isset( $gd_post['wpml_is_duplicate'] ) ) {
+					if ( ! empty( $gd_post['wpml_is_duplicate'] ) ) {
+						update_post_meta( $post->ID, '_icl_lang_duplicate_of', $translation_of );
+					} else {
+						delete_post_meta( $post->ID, '_icl_lang_duplicate_of' );
+					}
+				}
+
+				$sitepress->set_element_language_details( $post->ID, 'post_' . $gd_post['post_type'], $trid, $post_lang, $source_lang );
+			}
+		}
+
+		return $gd_post;
 	}
 }
