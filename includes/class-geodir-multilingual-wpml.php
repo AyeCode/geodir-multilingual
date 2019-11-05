@@ -1338,7 +1338,7 @@ class GeoDir_Multilingual_WPML {
 
 		if ( ! empty( $request['post_type'] ) ) {
 			$wpml_join = self::filter_single_type_join( '', $request['post_type'] );
-			$wpml_join = str_replace( " {$wpdb->posts}.", " p.", $wpml_join );
+			$wpml_join = str_replace( array( "\t{$wpdb->posts}.", " {$wpdb->posts}." ), array( "\tp.", " p." ), $wpml_join );
 
 			$join .= $wpml_join;
 		}
@@ -1351,8 +1351,8 @@ class GeoDir_Multilingual_WPML {
 
 		if ( ! empty( $request['post_type'] ) ) {
 			$wpml_where = self::filter_single_type_where( '', $request['post_type'] );
-			$wpml_where = str_replace( array( " {$wpdb->posts} p", " p." ), array( " {$wpdb->posts} wpml_p", " wpml_p." ), $wpml_where );
-			$wpml_where = str_replace( " {$wpdb->posts}.", " p.", $wpml_where );
+			$wpml_where = str_replace( array( "\t{$wpdb->posts} p", " {$wpdb->posts} p", "\tp.", " p." ), array( "\t{$wpdb->posts} wpml_p", " {$wpdb->posts} wpml_p", "\twpml_p.", " wpml_p." ), $wpml_where );
+			$wpml_where = str_replace( array( "\t{$wpdb->posts}.", " {$wpdb->posts}." ), array( "\tp.", " p." ), $wpml_where );
 
 			$where .= $wpml_where;
 		}
@@ -1978,60 +1978,72 @@ class GeoDir_Multilingual_WPML {
 		}
 	}
 
-	public static function geodir_bp_listings_count_join($join, $post_type){
-        global $table_prefix;
+	public static function geodir_bp_listings_count_join( $join, $post_type ) {
+        global $wpdb;
 
-	    $join .= " JOIN " . $table_prefix . "icl_translations AS icl_t ON icl_t.element_id = p.ID";
+        if ( $post_type ) {
+            $wpml_join = self::filter_single_type_join( '', $post_type );
+            $wpml_join = str_replace( array( " {$wpdb->posts}.", "\t{$wpdb->posts}." ), array( " p.", "\tp." ), $wpml_join );
+
+            $join .= $wpml_join;
+        }
+
         return $join;
     }
 
-    public static function geodir_bp_listings_count_where($where, $post_type){
-        $lang_code = ICL_LANGUAGE_CODE;
+    public static function geodir_bp_listings_count_where( $where, $post_type ) {
+        global $wpdb;
 
-        $where .= " AND icl_t.language_code = '" . $lang_code . "' AND icl_t.element_type = 'post_" . $post_type . "'";
+        if ( $post_type ) {
+            $wpml_where = self::filter_single_type_where( '', $post_type );
+            $wpml_where = str_replace( array( " {$wpdb->posts} p", "\t{$wpdb->posts} p", " p.", "\tp." ), array( " {$wpdb->posts} wpml_p", "\t{$wpdb->posts} wpml_p", " wpml_p.", "\twpml_p." ), $wpml_where );
+            $wpml_where = str_replace( array( " {$wpdb->posts}.", "\t{$wpdb->posts}." ), array( " p.", "\tp." ), $wpml_where );
+
+            $where .= $wpml_where;
+        }
+
         return $where;
     }
 
-    public static function geodir_bp_listings_join($join, $post_type){
-        global $table_prefix, $wpdb;
+    public static function geodir_bp_listings_join( $join, $post_type ) {
+        global $wpdb;
 
-        $join .= " JOIN " . $table_prefix . "icl_translations AS icl_t ON icl_t.element_id = " . $wpdb->posts . ".ID";
+        if ( $post_type ) {
+            $wpml_join = self::filter_single_type_join( '', $post_type );
+
+            $join .= $wpml_join;
+        }
+
         return $join;
     }
 
-    public static function geodir_bp_listings_where($where, $post_type){
-        $lang_code = ICL_LANGUAGE_CODE;
+    public static function geodir_bp_listings_where( $where, $post_type ) {
+        global $wpdb;
 
-        $where .= " AND icl_t.language_code = '" . $lang_code . "' AND icl_t.element_type = 'post_" . $post_type . "'";
+        if ( $post_type ) {
+            $wpml_where = self::filter_single_type_where( '', $post_type );
+            $wpml_where = str_replace( array( " {$wpdb->posts} p", "\t{$wpdb->posts} p", " p.", "\tp." ), array( " {$wpdb->posts} wpml_p", "\t{$wpdb->posts} wpml_p", " wpml_p.", "\twpml_p." ), $wpml_where );
+
+            $where .= $wpml_where;
+        }
+
         return $where;
     }
 
-    public static function geodir_bp_favorite_count_join($join, $post_type){
-        global $table_prefix, $wpdb;
-
-        $join .= " JOIN " . $table_prefix . "icl_translations AS icl_t ON icl_t.element_id = " . $wpdb->posts . ".ID";
-        return $join;
+    public static function geodir_bp_favorite_count_join( $join, $post_type ) {
+        return self::geodir_bp_listings_count_join( $join, $post_type );
     }
 
-	public static function geodir_bp_favorite_count_where($where, $post_type){
-        $lang_code = ICL_LANGUAGE_CODE;
-
-        $where .= " AND icl_t.language_code = '" . $lang_code . "' AND icl_t.element_type = 'post_" . $post_type . "'";
-        return $where;
+    public static function geodir_bp_favorite_count_where( $where, $post_type ) {
+        return self::geodir_bp_listings_count_where( $where, $post_type );
     }
 
-    public static function geodir_bp_reviews_count_join($join, $post_type){
-        global $table_prefix;
-
-        $join .= " JOIN " . $table_prefix . "icl_translations AS icl_t ON icl_t.element_id = p.ID";
-        return $join;
+    public static function geodir_bp_reviews_count_join( $join, $post_type ) {
+        return self::geodir_bp_listings_count_join( $join, $post_type );
     }
 
-    public static function geodir_bp_reviews_count_where($where, $post_type){
-        $lang_code = ICL_LANGUAGE_CODE;
-
-        $where .= " AND icl_t.language_code = '" . $lang_code . "' AND icl_t.element_type = 'post_" . $post_type . "'";
-        return $where;
+    public static function geodir_bp_reviews_count_where( $where, $post_type ) {
+        return self::geodir_bp_listings_count_where( $where, $post_type );
     }
 
 	public static function allow_invoice_for_listing( $allow, $post_ID ) {
