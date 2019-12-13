@@ -38,6 +38,11 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 
 == Changelog ==
 
+= 2.0.0.9 =
+* Rewrite rules conflict with translated location page slug - FIXED
+* Unable to set source language post in import post - FIXED
+* BuddyPress profile favorite listings tab shows error - FIXED
+
 = 2.0.0.8 =
 * Listing featured media duplication with recent WPML version - FIXED
 * Old post shows 404 error if categories translated after posts creation - FIXED

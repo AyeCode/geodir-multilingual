@@ -23,6 +23,7 @@ class GeoDir_Multilingual_WPML {
 		add_filter( 'icl_ls_languages', array( __CLASS__, 'icl_ls_languages' ), 11, 1 );
 		add_filter( 'icl_lang_sel_copy_parameters', array( __CLASS__, 'icl_lang_sel_copy_parameters' ), 11, 1 );
 		add_filter( 'geodir_get_page_id', array( __CLASS__, 'get_page_id' ), 10, 4 );
+		add_filter( 'geodir_get_noindex_page_ids', array( __CLASS__, 'get_noindex_page_ids' ), 10, 1 );
 		add_filter( 'geodir_is_archive_page_id', array( __CLASS__, 'is_archive_page_id' ), 10, 2 );
 		add_filter( 'geodir_is_geodir_page_id', array( __CLASS__, 'is_geodir_page_id' ), 10, 2 );
 		add_filter( 'geodir_post_permalink_structure_cpt_slug', array( __CLASS__, 'post_permalink_structure_cpt_slug' ), 10, 3 );
@@ -100,6 +101,15 @@ class GeoDir_Multilingual_WPML {
 		add_action( 'geodir_location_permalinks_post_rewrite_rule', array( __CLASS__, 'location_permalinks_post_rewrite_rule' ), 10, 7 );
 		add_action( 'geodir_location_permalinks_cat_rewrite_rule', array( __CLASS__, 'location_permalinks_cat_rewrite_rule' ), 10, 8 );
 		add_action( 'geodir_location_permalinks_tag_rewrite_rule', array( __CLASS__, 'location_permalinks_tag_rewrite_rule' ), 10, 8 );
+
+		// Disable "Use WPML's Translation Editor" for GD CPTs
+		add_filter( 'get_post_metadata', array( __CLASS__, 'get_post_metadata' ), 100, 4 );
+		add_filter( 'rewrite_rules_array', array( __CLASS__, 'rewrite_rules_array' ), 11, 1 );
+		
+		// Import / Export
+		add_action( 'geodir_import_post_before',  array( __CLASS__, 'import_post_before' ), 10, 1 );
+		add_action( 'geodir_import_post_after',  array( __CLASS__, 'import_post_after' ), 10, 2 );
+		add_filter( 'geodir_save_post_temp_data',  array( __CLASS__, 'save_post_temp_data' ), 1, 3 );
 	}
 
 	public static function get_default_language() {
@@ -1328,7 +1338,7 @@ class GeoDir_Multilingual_WPML {
 
 		if ( ! empty( $request['post_type'] ) ) {
 			$wpml_join = self::filter_single_type_join( '', $request['post_type'] );
-			$wpml_join = str_replace( " {$wpdb->posts}.", " p.", $wpml_join );
+			$wpml_join = str_replace( array( "\t{$wpdb->posts}.", " {$wpdb->posts}." ), array( "\tp.", " p." ), $wpml_join );
 
 			$join .= $wpml_join;
 		}
@@ -1341,8 +1351,8 @@ class GeoDir_Multilingual_WPML {
 
 		if ( ! empty( $request['post_type'] ) ) {
 			$wpml_where = self::filter_single_type_where( '', $request['post_type'] );
-			$wpml_where = str_replace( array( " {$wpdb->posts} p", " p." ), array( " {$wpdb->posts} wpml_p", " wpml_p." ), $wpml_where );
-			$wpml_where = str_replace( " {$wpdb->posts}.", " p.", $wpml_where );
+			$wpml_where = str_replace( array( "\t{$wpdb->posts} p", " {$wpdb->posts} p", "\tp.", " p." ), array( "\t{$wpdb->posts} wpml_p", " {$wpdb->posts} wpml_p", "\twpml_p.", " wpml_p." ), $wpml_where );
+			$wpml_where = str_replace( array( "\t{$wpdb->posts}.", " {$wpdb->posts}." ), array( "\tp.", " p." ), $wpml_where );
 
 			$where .= $wpml_where;
 		}
@@ -1493,16 +1503,18 @@ class GeoDir_Multilingual_WPML {
 
 	public static function export_posts_csv_columns( $row, $post_type ) {
 		if ( is_post_type_translated( $post_type ) ) {
-			$row[] = 'language';
-			$row[] = 'original_post_id';
+			$row[] = 'wpml_lang';
+			$row[] = 'wpml_translation_of';
+			$row[] = 'wpml_is_duplicate';
 		}
 		return $row;
 	}
 
-	public static function export_posts_csv_row( $row, $term_id, $post_type ) {
+	public static function export_posts_csv_row( $row, $post_id, $post_type ) {
 		if ( is_post_type_translated( $post_type ) ) {
-			$row[] = self::get_language_for_element( $term_id, 'post_' . $post_type );
-			$row[] = self::get_original_element_id( $term_id, 'post_' . $post_type );
+			$row[] = self::get_language_for_element( $post_id, 'post_' . $post_type ); // wpml_lang
+			$row[] = self::get_original_element_id( $post_id, 'post_' . $post_type ); // wpml_translation_of
+			$row[] = absint( get_post_meta( $post_id, '_icl_lang_duplicate_of', true ) ) ? 1 : '0'; // wpml_is_duplicate
 		}
 		return $row;
 	}
@@ -1966,60 +1978,72 @@ class GeoDir_Multilingual_WPML {
 		}
 	}
 
-	public static function geodir_bp_listings_count_join($join, $post_type){
-        global $table_prefix;
+	public static function geodir_bp_listings_count_join( $join, $post_type ) {
+        global $wpdb;
 
-	    $join .= " JOIN " . $table_prefix . "icl_translations AS icl_t ON icl_t.element_id = p.ID";
+        if ( $post_type ) {
+            $wpml_join = self::filter_single_type_join( '', $post_type );
+            $wpml_join = str_replace( array( " {$wpdb->posts}.", "\t{$wpdb->posts}." ), array( " p.", "\tp." ), $wpml_join );
+
+            $join .= $wpml_join;
+        }
+
         return $join;
     }
 
-    public static function geodir_bp_listings_count_where($where, $post_type){
-        $lang_code = ICL_LANGUAGE_CODE;
+    public static function geodir_bp_listings_count_where( $where, $post_type ) {
+        global $wpdb;
 
-        $where .= " AND icl_t.language_code = '" . $lang_code . "' AND icl_t.element_type = 'post_" . $post_type . "'";
+        if ( $post_type ) {
+            $wpml_where = self::filter_single_type_where( '', $post_type );
+            $wpml_where = str_replace( array( " {$wpdb->posts} p", "\t{$wpdb->posts} p", " p.", "\tp." ), array( " {$wpdb->posts} wpml_p", "\t{$wpdb->posts} wpml_p", " wpml_p.", "\twpml_p." ), $wpml_where );
+            $wpml_where = str_replace( array( " {$wpdb->posts}.", "\t{$wpdb->posts}." ), array( " p.", "\tp." ), $wpml_where );
+
+            $where .= $wpml_where;
+        }
+
         return $where;
     }
 
-    public static function geodir_bp_listings_join($join, $post_type){
-        global $table_prefix, $wpdb;
+    public static function geodir_bp_listings_join( $join, $post_type ) {
+        global $wpdb;
 
-        $join .= " JOIN " . $table_prefix . "icl_translations AS icl_t ON icl_t.element_id = " . $wpdb->posts . ".ID";
+        if ( $post_type ) {
+            $wpml_join = self::filter_single_type_join( '', $post_type );
+
+            $join .= $wpml_join;
+        }
+
         return $join;
     }
 
-    public static function geodir_bp_listings_where($where, $post_type){
-        $lang_code = ICL_LANGUAGE_CODE;
+    public static function geodir_bp_listings_where( $where, $post_type ) {
+        global $wpdb;
 
-        $where .= " AND icl_t.language_code = '" . $lang_code . "' AND icl_t.element_type = 'post_" . $post_type . "'";
+        if ( $post_type ) {
+            $wpml_where = self::filter_single_type_where( '', $post_type );
+            $wpml_where = str_replace( array( " {$wpdb->posts} p", "\t{$wpdb->posts} p", " p.", "\tp." ), array( " {$wpdb->posts} wpml_p", "\t{$wpdb->posts} wpml_p", " wpml_p.", "\twpml_p." ), $wpml_where );
+
+            $where .= $wpml_where;
+        }
+
         return $where;
     }
 
-    public static function geodir_bp_favorite_count_join($join, $post_type){
-        global $table_prefix, $wpdb;
-
-        $join .= " JOIN " . $table_prefix . "icl_translations AS icl_t ON icl_t.element_id = " . $wpdb->posts . ".ID";
-        return $join;
+    public static function geodir_bp_favorite_count_join( $join, $post_type ) {
+        return self::geodir_bp_listings_count_join( $join, $post_type );
     }
 
-	public static function geodir_bp_favorite_count_where($where, $post_type){
-        $lang_code = ICL_LANGUAGE_CODE;
-
-        $where .= " AND icl_t.language_code = '" . $lang_code . "' AND icl_t.element_type = 'post_" . $post_type . "'";
-        return $where;
+    public static function geodir_bp_favorite_count_where( $where, $post_type ) {
+        return self::geodir_bp_listings_count_where( $where, $post_type );
     }
 
-    public static function geodir_bp_reviews_count_join($join, $post_type){
-        global $table_prefix;
-
-        $join .= " JOIN " . $table_prefix . "icl_translations AS icl_t ON icl_t.element_id = p.ID";
-        return $join;
+    public static function geodir_bp_reviews_count_join( $join, $post_type ) {
+        return self::geodir_bp_listings_count_join( $join, $post_type );
     }
 
-    public static function geodir_bp_reviews_count_where($where, $post_type){
-        $lang_code = ICL_LANGUAGE_CODE;
-
-        $where .= " AND icl_t.language_code = '" . $lang_code . "' AND icl_t.element_type = 'post_" . $post_type . "'";
-        return $where;
+    public static function geodir_bp_reviews_count_where( $where, $post_type ) {
+        return self::geodir_bp_listings_count_where( $where, $post_type );
     }
 
 	public static function allow_invoice_for_listing( $allow, $post_ID ) {
@@ -2308,5 +2332,153 @@ class GeoDir_Multilingual_WPML {
 			}
 		}
 		return $term;
+	}
+
+	/**
+	 * Filter & disable "Use WPML's Translation Editor" for GD CPTs.
+	 *
+	 * @since 2.0.0.8
+	 *
+	 * @param null|array|string $value     The value get_metadata() should return - a single metadata value,
+	 *                                     or an array of values.
+	 * @param int               $object_id Object ID.
+	 * @param string            $meta_key  Meta key.
+	 * @param bool              $single    Whether to return only the first value of the specified $meta_key.
+	 * @return mixed Single metadata value, or array of values.
+	 */
+	public static function get_post_metadata( $value, $object_id, $meta_key, $single ) {
+		if ( $meta_key == '_wpml_post_translation_editor_native' && ! empty( $object_id ) && geodir_is_gd_post_type( get_post_type( $object_id ) ) ) {
+			$value = 'yes';
+		}
+
+		return $value;
+	}
+
+	/**
+	 * @since 2.0.0.9
+	 */
+	public static function rewrite_rules_array( $rules ) {
+		global $sitepress;
+
+		$element_type = 'post_page';
+		$page_id = geodir_get_option( 'page_location' );
+		$trid = $sitepress->get_element_trid( $page_id, $element_type );
+		$translations = $sitepress->get_element_translations( $trid, $element_type );
+
+		if ( ! empty( $translations ) ) {
+			$post_name = get_post_field( 'post_name', $page_id );
+			$_rules = array();
+
+			foreach ( $rules as $key => $rule ) {
+				$_rules[ $key ] = $rule;
+
+				if ( strpos( $key, '^' . $post_name . '/' ) === false ) {
+					continue;
+				}
+
+				foreach ( $translations as $lang => $translation ) {
+					if ( $translation->element_id != $page_id ) {
+						$tr_post_name = get_post_field( 'post_name', $translation->element_id );
+
+						if ( $tr_post_name && $tr_post_name != $post_name ) {
+							$tr_key = str_replace( '^' . $post_name . '/', '^' . $tr_post_name . '/', $key );
+							$tr_rule = str_replace( 'pagename=' . $post_name . '&', 'pagename=' . $tr_post_name . '&', $rule );
+
+							if ( ! isset( $rules[ $tr_key ] ) ) {
+								$_rules[ $tr_key ] = $tr_rule;
+							}
+						}
+					}
+				}
+			}
+
+			$rules = $_rules;
+		}
+
+		return $rules;
+	}
+
+	/**
+	 * @since 2.0.0.9
+	 */
+	public static function get_noindex_page_ids( $page_ids ) {
+		if ( ! is_array( $page_ids ) ) {
+			$page_ids = array();
+		}
+
+		$_page_ids = array();
+		$_page_ids[] = geodir_get_page_id( 'details', '', false ); // Details page
+		$_page_ids[] = geodir_get_page_id( 'archive', '', false ); // Archive page
+		$_page_ids[] = geodir_get_page_id( 'archive_item', '', false ); // Archive item page
+
+		foreach ( $_page_ids as $page_id ) {
+			if ( empty( $page_id ) ) {
+				continue;
+			}
+
+			$tr_page_ids = self::get_element_ids( $page_id, 'post_page' );
+
+			if ( ! empty( $tr_page_ids ) && is_array( $tr_page_ids ) ) {
+				$page_ids = array_merge( $page_ids, $tr_page_ids );
+			}
+		}
+
+		return array_unique( $page_ids );
+	}
+
+	/**
+	 * @since 2.0.0.68
+	 */
+	public static function import_post_before( $gd_post ) {
+		global $gd_wpml_switch_post_lang;
+
+		$gd_wpml_switch_post_lang = -1;
+
+		if ( ! empty( $gd_post['post_type'] ) && is_post_type_translated( $gd_post['post_type'] ) && ( ! empty( $gd_post['wpml_lang'] ) || ! empty( $gd_post['wpml_translation_of'] ) ) ) {
+			$post_id = ! empty( $gd_post['ID'] ) ? absint( $gd_post['ID'] ) : 0;
+			$post_lang = $post_id ? self::get_post_language( $post_id ) : '';
+			$wpml_lang = isset( $gd_post['wpml_lang'] ) ? $gd_post['wpml_lang'] : $post_lang;
+
+			$gd_wpml_switch_post_lang = self::switch_lang( $wpml_lang );
+		}
+	}
+
+	/**
+	 * @since 2.0.0.68
+	 */
+	public static function import_post_after( $gd_post, $success = false ) {
+		global $gd_wpml_switch_post_lang;
+
+		if ( $gd_wpml_switch_post_lang !== -1 ) {
+			self::switch_lang( $gd_wpml_switch_post_lang );
+		}
+	}
+
+	/**
+	 * @since 2.0.0.68
+	 */
+	public static function save_post_temp_data( $gd_post, $post, $update ) {
+		global $sitepress, $gd_wpml_switch_post_lang;
+
+		if ( $gd_wpml_switch_post_lang !== -1 && ! empty( $gd_post['post_type'] ) && ! empty( $post->ID ) && $gd_post['post_type'] == $post->post_type && is_post_type_translated( $gd_post['post_type'] ) ) {
+			if ( ! empty( $gd_post['wpml_translation_of'] ) && ( $translation_of = absint( $gd_post['wpml_translation_of'] ) ) ) {
+				$source_lang = self::get_post_language( $translation_of );
+				$post_lang = self::get_post_language( $post->ID );
+				$trid = $sitepress->get_element_trid( $translation_of, 'post_' . $gd_post['post_type'] );
+
+				// Set/unset duplicate
+				if ( isset( $gd_post['wpml_is_duplicate'] ) ) {
+					if ( ! empty( $gd_post['wpml_is_duplicate'] ) ) {
+						update_post_meta( $post->ID, '_icl_lang_duplicate_of', $translation_of );
+					} else {
+						delete_post_meta( $post->ID, '_icl_lang_duplicate_of' );
+					}
+				}
+
+				$sitepress->set_element_language_details( $post->ID, 'post_' . $gd_post['post_type'], $trid, $post_lang, $source_lang );
+			}
+		}
+
+		return $gd_post;
 	}
 }
