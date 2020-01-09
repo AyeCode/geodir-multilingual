@@ -2206,27 +2206,21 @@ class GeoDir_Multilingual_WPML {
 		global $geodirectory;
 
 		if ( ! $is_geodir_page && $id ) {
-			$object_id = self::get_original_element_id( (int) $id, 'post_page' );
+			$page_ids = self::get_element_ids( $id, 'post_page' );
 
-			if ( ! ( $object_id && $object_id != $id ) ) {
-				return $is_geodir_page;
-			}
-
-			$id = $object_id;
-
-			if ( ! empty( $geodirectory->settings['page_add'] ) && $geodirectory->settings['page_add'] == $id ) {
+			if ( ! empty( $geodirectory->settings['page_add'] ) && in_array( (int) $geodirectory->settings['page_add'], $page_ids ) ) {
 				$is_geodir_page = true;
-			} elseif ( ! empty( $geodirectory->settings['page_location'] ) && $geodirectory->settings['page_location'] == $id ) {
+			} elseif ( ! empty( $geodirectory->settings['page_location'] ) && in_array( (int) $geodirectory->settings['page_location'], $page_ids ) ) {
 				$is_geodir_page = true;
-			} elseif ( ! empty( $geodirectory->settings['page_search'] ) && $geodirectory->settings['page_search'] == $id ) {
+			} elseif ( ! empty( $geodirectory->settings['page_search'] ) && in_array( (int) $geodirectory->settings['page_search'], $page_ids ) ) {
 				$is_geodir_page = true;
-			} elseif ( ! empty( $geodirectory->settings['page_terms_conditions'] ) && $geodirectory->settings['page_terms_conditions'] == $id ) {
+			} elseif ( ! empty( $geodirectory->settings['page_terms_conditions'] ) && in_array( (int) $geodirectory->settings['page_terms_conditions'], $page_ids ) ) {
 				$is_geodir_page = true;
-			} elseif ( ! empty( $geodirectory->settings['page_details'] ) && $geodirectory->settings['page_details'] == $id ) {
+			} elseif ( ! empty( $geodirectory->settings['page_details'] ) && in_array( (int) $geodirectory->settings['page_details'], $page_ids ) ) {
 				$is_geodir_page = true;
-			} elseif ( ! empty( $geodirectory->settings['page_archive'] ) && $geodirectory->settings['page_archive'] == $id ) {
+			} elseif ( ! empty( $geodirectory->settings['page_archive'] ) && in_array( (int) $geodirectory->settings['page_archive'], $page_ids ) ) {
 				$is_geodir_page = true;
-			} elseif ( ! empty( $geodirectory->settings['page_archive_item'] ) && $geodirectory->settings['page_archive_item'] == $id ) {
+			} elseif ( ! empty( $geodirectory->settings['page_archive_item'] ) && in_array( (int) $geodirectory->settings['page_archive_item'], $page_ids ) ) {
 				$is_geodir_page = true;
 			} elseif ( geodir_is_cpt_template_page( $id ) ) {
 				$is_geodir_page = true;
