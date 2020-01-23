@@ -4,7 +4,7 @@ Tags: geodirectory, geodirectory multilingual, localization, language, multiling
 Author URI: https://wpgeodirectory.com/
 Plugin URI: https://wpgeodirectory.com/downloads/multilingual/
 Requires at least: 4.9
-Tested up to: 5.2
+Tested up to: 5.3.2
 Stable tag: 2.0.0.8
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -42,6 +42,7 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 * Rewrite rules conflict with translated location page slug - FIXED
 * Unable to set source language post in import post - FIXED
 * BuddyPress profile favorite listings tab shows error - FIXED
+* Sometimes pagination & feed not working on category pages - FIXED
 
 = 2.0.0.8 =
 * Listing featured media duplication with recent WPML version - FIXED
