@@ -156,10 +156,10 @@ class GeoDir_Multilingual_WPML {
 	 * @param string $element_type Element type. Ex: post_gd_place or tax_gd_placecategory.
 	 * @return Original element id.
 	 */
-	public static function get_original_element_id( $element_id, $element_type ) {
+	public static function get_original_element_id( $element_id, $element_type, $skip_empty = false, $all_statuses = true, $skip_cache = false ) {
 		global $sitepress;
 
-		$original_element_id = $sitepress->get_original_element_id( $element_id, $element_type );
+		$original_element_id = $sitepress->get_original_element_id( $element_id, $element_type, $skip_empty, $all_statuses, $skip_cache );
 		if ( $element_id == $original_element_id ) {
 			$original_element_id = '';
 		}
@@ -186,20 +186,28 @@ class GeoDir_Multilingual_WPML {
 		return $ids;
 	}
 
-	public static function get_element_ids( $id, $element_type ) {
+	public static function get_element_ids( $id, $element_type, $skip_empty = false, $all_statuses = true, $skip_cache = false ) {
 		global $sitepress;
 
-		$original_id = $sitepress->get_original_element_id( $id, $element_type );
-		$trid = $sitepress->get_element_trid( $original_id, $element_type );
-		$page_ids = array( absint( $original_id ), absint( $id ) );
+		$page_ids = array( absint( $id ) );
 
-		if ( ! empty( $trid ) && ( $translations = $sitepress->get_element_translations( $trid, $element_type ) ) ) {
-			foreach ( $translations as $lang => $translation ) {
-				$page_ids[] = absint( $translation->element_id );
+		$original_id = $sitepress->get_original_element_id( $id, $element_type, $skip_empty, $all_statuses, $skip_cache );
+
+		if ( ! empty( $original_id ) ) {
+			$page_ids[] = absint( $original_id );
+
+			$trid = $sitepress->get_element_trid( $original_id, $element_type );
+
+			if ( ! empty( $trid ) && ( $translations = $sitepress->get_element_translations( $trid, $element_type, $skip_empty, $all_statuses, $skip_cache ) ) ) {
+				foreach ( $translations as $lang => $translation ) {
+					if ( ! empty( $translation->element_id ) ) {
+						$page_ids[] = absint( $translation->element_id );
+					}
+				}
 			}
-		}
 
-		$page_ids = array_unique( $page_ids );
+			$page_ids = array_unique( $page_ids );
+		}
 
 		return $page_ids;
 	}
@@ -313,117 +321,150 @@ class GeoDir_Multilingual_WPML {
 	public static function icl_ls_languages( $languages ) {
 		global $wp_query, $sitepress, $wpml_post_translations, $wpml_term_translations;
 
-		if ( geodir_is_page( 'search' ) || geodir_is_page( 'location' ) ) {
+		if ( geodir_is_page( 'search' ) || geodir_is_page( 'post_type' ) || geodir_is_page( 'location' ) ) {
 			$current_language = $sitepress->get_current_language();
 			$default_language = $sitepress->get_default_language();
 
-			$is_search = false;
-			$is_location = false;
-			if ( geodir_is_page( 'search' ) ) {
-				$is_search = true;
-				$default_page_id = geodir_get_page_id( 'search', '', false );
-			} else {
-				$is_location = true;
-				$default_page_id = geodir_get_page_id( 'location', '', false );
-			}
+			if ( geodir_is_page( 'post_type' ) ) {
+				$post_type = geodir_get_current_posttype();
 
-			$post_type = ! empty( $_REQUEST['stype'] ) ? sanitize_text_field( $_REQUEST['stype'] ) : '';
-			$categories = ! empty( $_REQUEST['spost_category'] ) ? $_REQUEST['spost_category'] : NULL;
-			if ( is_array( $categories ) ) {
-				$categories = array_values( $categories );
-			}
-			
-			$w_active_languages = apply_filters( 'wpml_active_languages_access', $sitepress->get_active_languages(), array( 'action' => 'read' ) );
+				if ( $current_language != $default_language && ! empty( $post_type ) && self::is_translated_post_type( $post_type ) && self::is_slug_translation_on( $post_type ) ) {
+					$slash_helper = new WPML_Slash_Management();
+					$post_type_object = get_post_type_object( $post_type );
 
-			$languages_helper = new WPML_Languages( $wpml_term_translations, $sitepress, $wpml_post_translations );
-
-			$translate_values = array();
-
-			// 2. determine url
-			foreach ( $w_active_languages as $k => $lang ) {
-				$skip_lang = false;
-				$translate_values[ $lang['code'] ] = array();
-
-				$this_lang_tmp = $sitepress->get_current_language();
-
-				$sitepress->switch_lang( $lang['code'] );
-
-				if ( $is_search ) {
-					$page_id = absint( geodir_search_page_id() );
-				} else {
-					$page_id = absint( geodir_location_page_id() );
-				}
-
-				if ( ! empty( $categories ) && ! empty( $post_type ) ) {
-					$is_array = is_array( $categories ) ? true : false;
-
-					$translate_categories = apply_filters( 'geodir_filter_query_var_categories', $categories, $post_type );
-
-					if ( ! empty( $translate_categories ) ) {
-						$translate_values[ $lang['code'] ]['spost_category'] = $is_array ? $translate_categories : $translate_categories[0];
-					}
-				}
-
-				if ( $default_language != $lang['code'] && $default_page_id == $page_id ) {
-					$skip_lang = true;
-				} else {
-					if ( $is_location ) {
-						$page_url = geodir_get_location_link( 'current' );
+					if ( isset( $post_type_object->rewrite ) ) {
+						$slug = trim( $post_type_object->rewrite['slug'], '/' );
 					} else {
-						$page_url = get_permalink( absint( $page_id ) );
+						$slug = $post_type_object->name;
 					}
 
-					$lang[ 'translated_url' ] = apply_filters( 'geodir_wpml_language_page_url', $page_url, $page_id, $lang['code'] );
-					$lang[ 'missing' ]        = 0;
-				}
+					$slug = apply_filters( 'wpml_get_translated_slug', $slug, $post_type, $current_language );
 
-				$sitepress->switch_lang( $this_lang_tmp );
+					foreach ( $languages as $k => $lang ) {
+						if ( empty( $lang[ 'missing' ] ) && $current_language != $lang['language_code'] ) {
+							$translated_slug = apply_filters( 'wpml_get_translated_slug', $slug, $post_type, $lang['language_code'] );
 
-				if ( ! $skip_lang ) {
-					$w_active_languages[ $k ] = $lang;
-				} else {
-					unset( $w_active_languages[ $k ] );
-				}
-			}
+							$link = $lang['url'];
+							if ( is_string( $translated_slug ) ) {
+								$link_parts = explode( '?', $link, 2 );
 
-			// 3.
-			foreach ( $w_active_languages as $k => $v ) {
-				$w_active_languages[ $k ] = $languages_helper->get_ls_language (
-					$k,
-					$current_language,
-					$w_active_languages[ $k ]
-				);
-			}
-
-			// 4. pass GET parameters
-			$parameters_copied = apply_filters( 'icl_lang_sel_copy_parameters', array_map( 'trim', explode( ',', wpml_get_setting_filter( '', 'icl_lang_sel_copy_parameters' ) ) ) );
-			if ( $parameters_copied ) {
-				foreach ( $_GET as $k => $v ) {
-					if ( in_array( $k, $parameters_copied ) ) {
-						$gets_passed[ $k ] = $v;
-					}
-				}
-			}
-			if ( ! empty( $gets_passed ) ) {
-				foreach ( $w_active_languages as $code => $al ) {
-					if ( empty( $al[ 'missing' ] ) ) {
-						$gets_passed = apply_filters( 'geodir_wpml_url_parameters_gets_passed', $gets_passed, $code, $w_active_languages[ $code ][ 'url' ] );
-
-						$set_params = array();
-						foreach ( $gets_passed as $k => $v ) {
-							if ( isset( $translate_values[ $code ] ) && isset( $translate_values[ $code ][ $k ] ) ) {
-								$v = $translate_values[ $code ][ $k ];
+								$pattern = '#\/' . preg_quote( $slug, '#' ) . '\/#';
+								$link_new = trailingslashit( preg_replace( $pattern, '/' . $translated_slug . '/', trailingslashit( $link_parts[0] ), 1 ) );
+								$link = $slash_helper->match_trailing_slash_to_reference( $link_new, $link_parts[0] );
+								$languages[ $k ][ 'url' ] = isset( $link_parts[1] ) ? $link . '?' . $link_parts[1] : $link;
 							}
+						}
+					}
+				}
+			} else {
+				$is_search = false;
+				$is_location = false;
+				if ( geodir_is_page( 'search' ) ) {
+					$is_search = true;
+					$default_page_id = geodir_get_page_id( 'search', '', false );
+				} else {
+					$is_location = true;
+					$default_page_id = geodir_get_page_id( 'location', '', false );
+				}
 
-							$set_params[ $k ] = $v;
+				$post_type = ! empty( $_REQUEST['stype'] ) ? sanitize_text_field( $_REQUEST['stype'] ) : '';
+				$categories = ! empty( $_REQUEST['spost_category'] ) ? $_REQUEST['spost_category'] : NULL;
+				if ( is_array( $categories ) ) {
+					$categories = array_values( $categories );
+				}
+
+				$w_active_languages = apply_filters( 'wpml_active_languages_access', $sitepress->get_active_languages(), array( 'action' => 'read' ) );
+
+				$languages_helper = new WPML_Languages( $wpml_term_translations, $sitepress, $wpml_post_translations );
+
+				$translate_values = array();
+
+				// 2. determine url
+				foreach ( $w_active_languages as $k => $lang ) {
+					$skip_lang = false;
+					$translate_values[ $lang['code'] ] = array();
+
+					$this_lang_tmp = $sitepress->get_current_language();
+
+					$sitepress->switch_lang( $lang['code'] );
+
+					if ( $is_search ) {
+						$page_id = absint( geodir_search_page_id() );
+					} else {
+						$page_id = absint( geodir_location_page_id() );
+					}
+
+					if ( ! empty( $categories ) && ! empty( $post_type ) ) {
+						$is_array = is_array( $categories ) ? true : false;
+
+						$translate_categories = apply_filters( 'geodir_filter_query_var_categories', $categories, $post_type );
+
+						if ( ! empty( $translate_categories ) ) {
+							$translate_values[ $lang['code'] ]['spost_category'] = $is_array ? $translate_categories : $translate_categories[0];
+						}
+					}
+
+					if ( $default_language != $lang['code'] && $default_page_id == $page_id ) {
+						$skip_lang = true;
+					} else {
+						if ( $is_location ) {
+							$page_url = geodir_get_location_link( 'current' );
+						} else {
+							$page_url = get_permalink( absint( $page_id ) );
 						}
 
-						$w_active_languages[ $code ][ 'url' ] = add_query_arg( $set_params, $w_active_languages[ $code ][ 'url' ] );
+						$lang[ 'translated_url' ] = apply_filters( 'geodir_wpml_language_page_url', $page_url, $page_id, $lang['code'] );
+						$lang[ 'missing' ]        = 0;
+					}
+
+					$sitepress->switch_lang( $this_lang_tmp );
+
+					if ( ! $skip_lang ) {
+						$w_active_languages[ $k ] = $lang;
+					} else {
+						unset( $w_active_languages[ $k ] );
 					}
 				}
-			}
 
-			$languages = $w_active_languages;
+				// 3.
+				foreach ( $w_active_languages as $k => $v ) {
+					$w_active_languages[ $k ] = $languages_helper->get_ls_language (
+						$k,
+						$current_language,
+						$w_active_languages[ $k ]
+					);
+				}
+
+				// 4. pass GET parameters
+				$parameters_copied = apply_filters( 'icl_lang_sel_copy_parameters', array_map( 'trim', explode( ',', wpml_get_setting_filter( '', 'icl_lang_sel_copy_parameters' ) ) ) );
+				if ( $parameters_copied ) {
+					foreach ( $_GET as $k => $v ) {
+						if ( in_array( $k, $parameters_copied ) ) {
+							$gets_passed[ $k ] = $v;
+						}
+					}
+				}
+				if ( ! empty( $gets_passed ) ) {
+					foreach ( $w_active_languages as $code => $al ) {
+						if ( empty( $al[ 'missing' ] ) ) {
+							$gets_passed = apply_filters( 'geodir_wpml_url_parameters_gets_passed', $gets_passed, $code, $w_active_languages[ $code ][ 'url' ] );
+
+							$set_params = array();
+							foreach ( $gets_passed as $k => $v ) {
+								if ( isset( $translate_values[ $code ] ) && isset( $translate_values[ $code ][ $k ] ) ) {
+									$v = $translate_values[ $code ][ $k ];
+								}
+
+								$set_params[ $k ] = $v;
+							}
+
+							$w_active_languages[ $code ][ 'url' ] = add_query_arg( $set_params, $w_active_languages[ $code ][ 'url' ] );
+						}
+					}
+				}
+
+				$languages = $w_active_languages;
+			}
 		}
 
 		return $languages;
@@ -518,7 +559,7 @@ class GeoDir_Multilingual_WPML {
 	 * @return string $link.
 	 */
 	public static function post_type_archive_link( $link, $post_type ) {
-		$post_types   = geodir_get_posttypes();
+		$post_types   = geodir_get_posttypes( 'array' );
 		
 		if ( isset( $post_types[ $post_type ] ) ) {
 			$slug = $post_types[ $post_type ]['rewrite']['slug'];
@@ -1020,7 +1061,7 @@ class GeoDir_Multilingual_WPML {
 		if ( !empty( $gd_post->ID ) && !$preview && geodir_is_page( 'detail' ) && self::is_duplicate_allowed( $gd_post->ID ) ) {
 			$post_id = $gd_post->ID;
 			$element_type = 'post_' . get_post_type( $post_id );
-			$original_post_id = $sitepress->get_original_element_id( $post_id, $element_type );
+			$original_post_id = $sitepress->get_original_element_id( $post_id, $element_type, false, true );
 			
 			if ( $original_post_id == $post_id ) {
 				$wpml_languages = $sitepress->get_active_languages();
@@ -1094,7 +1135,7 @@ class GeoDir_Multilingual_WPML {
 					global $sitepress;
 					
 					$element_type = 'post_' . get_post_type( $post_id );
-					$master_post_id = $sitepress->get_original_element_id( $post_id, $element_type );
+					$master_post_id = $sitepress->get_original_element_id( $post_id, $element_type, false, true );
 					
 					if ( $master_post_id == $post_id ) {
 						$_REQUEST['icl_ajx_action'] = 'make_duplicates';
@@ -2073,7 +2114,23 @@ class GeoDir_Multilingual_WPML {
 	}
 
 	public static function location_permalinks_post_rewrite_rule( $post_type, $slug, $cpt_match, $redirect, $cpt_query_vars, $after, $geodir_location_permalinks ) {
-		global $sitepress;
+		global $wp_rewrite, $sitepress;
+
+		$feedindex = $wp_rewrite->index;
+
+		// Build a regex to match the feed section of URLs, something like (feed|atom|rss|rss2)/?
+		$feedregex2 = '';
+		foreach ( (array) $wp_rewrite->feeds as $feed_name ) {
+			$feedregex2 .= $feed_name . '|';
+		}
+		$feedregex2 = '(' . trim( $feedregex2, '|' ) . ')/?$';
+
+		/*
+		 * $feedregex is identical but with /feed/ added on as well, so URLs like <permalink>/feed/atom
+		 * and <permalink>/atom are both possible
+		 */
+		$feedregex = $wp_rewrite->feed_base . '/' . $feedregex2;
+		$feedbase = $wp_rewrite->feed_base;
 
 		if ( is_post_type_translated( $post_type ) && self::is_slug_translation_on( $post_type ) ) {
 			$languages = $sitepress->get_active_languages();
@@ -2082,6 +2139,18 @@ class GeoDir_Multilingual_WPML {
 				$translated_slug = self::get_translated_cpt_slug( $slug, $post_type, $lang_code );
 
 				if ( $translated_slug != $slug ) {
+					// Add rule for /feed/(feed|atom|rss|rss2|rdf).
+					$geodir_location_permalinks->add_rewrite_rule(
+						'^' . $translated_slug . '/' . implode( "", array_fill( 0, count( $cpt_query_vars ) , '([^/]*)/' ) ) . $feedregex,
+						$redirect . implode( '&', $cpt_query_vars ) . '&feed=$matches[' . $cpt_match . ']',
+						$after
+					);
+					// Add rule for /(feed|atom|rss|rss2|rdf) (see comment near creation of $feedregex).
+					$geodir_location_permalinks->add_rewrite_rule(
+						'^' . $translated_slug . '/' . implode( "", array_fill( 0, count( $cpt_query_vars ) , '([^/]*)/' ) ) . $feedregex2,
+						$redirect . implode( '&', $cpt_query_vars ) . '&feed=$matches[' . $cpt_match . ']',
+						$after
+					);
 					// paged
 					$geodir_location_permalinks->add_rewrite_rule(
 						'^' . $translated_slug . '/' . implode( "", array_fill( 0, count( $cpt_query_vars ) , '([^/]*)/' ) ) . 'page/?([0-9]{1,})/?$',
@@ -2101,7 +2170,23 @@ class GeoDir_Multilingual_WPML {
 	}
 
 	public static function location_permalinks_cat_rewrite_rule( $post_type, $cpt_slug, $cat_base, $redirect, $cat_match, $cat_query_vars, $after, $geodir_location_permalinks ) {
-		global $sitepress;
+		global $wp_rewrite, $sitepress;
+
+		$feedindex = $wp_rewrite->index;
+
+		// Build a regex to match the feed section of URLs, something like (feed|atom|rss|rss2)/?
+		$feedregex2 = '';
+		foreach ( (array) $wp_rewrite->feeds as $feed_name ) {
+			$feedregex2 .= $feed_name . '|';
+		}
+		$feedregex2 = '(' . trim( $feedregex2, '|' ) . ')/?$';
+
+		/*
+		 * $feedregex is identical but with /feed/ added on as well, so URLs like <permalink>/feed/atom
+		 * and <permalink>/atom are both possible
+		 */
+		$feedregex = $wp_rewrite->feed_base . '/' . $feedregex2;
+		$feedbase = $wp_rewrite->feed_base;
 
 		if ( is_post_type_translated( $post_type ) && self::is_slug_translation_on( $post_type ) ) {
 			$languages = $sitepress->get_active_languages();
@@ -2110,6 +2195,18 @@ class GeoDir_Multilingual_WPML {
 				$translated_slug = self::get_translated_cpt_slug( $cpt_slug, $post_type, $lang_code );
 
 				if ( $translated_slug != $cpt_slug ) {
+					// Add rule for /feed/(feed|atom|rss|rss2|rdf).
+					$geodir_location_permalinks->add_rewrite_rule(
+						'^' . $translated_slug . '/' . $cat_base . implode( "", array_fill( 0, count( $cat_query_vars ) , '([^/]*)/' ) ) . $feedregex,
+						$redirect . implode( '&', $cat_query_vars ) . '&feed=$matches[' . ( $cat_match + 1 ) . ']',
+						$after
+					);
+					// Add rule for /(feed|atom|rss|rss2|rdf) (see comment near creation of $feedregex).
+					$geodir_location_permalinks->add_rewrite_rule(
+						'^' . $translated_slug . '/' . $cat_base . implode( "", array_fill( 0, count( $cat_query_vars ) , '([^/]*)/' ) ) . $feedregex2,
+						$redirect . implode( '&', $cat_query_vars ) . '&feed=$matches[' . ( $cat_match + 1 ) . ']',
+						$after
+					);
 					// paged
 					$geodir_location_permalinks->add_rewrite_rule(
 						'^' . $translated_slug . '/' . $cat_base . implode( "", array_fill( 0, count( $cat_query_vars ) , '([^/]*)/' ) ) . 'page/?([0-9]{1,})/?$',
@@ -2128,7 +2225,23 @@ class GeoDir_Multilingual_WPML {
 	}
 
 	public static function location_permalinks_tag_rewrite_rule( $post_type, $cpt_slug, $tag_base, $redirect, $tag_match, $tag_query_vars, $after, $geodir_location_permalinks ) {
-		global $sitepress;
+		global $wp_rewrite, $sitepress;
+
+		$feedindex = $wp_rewrite->index;
+
+		// Build a regex to match the feed section of URLs, something like (feed|atom|rss|rss2)/?
+		$feedregex2 = '';
+		foreach ( (array) $wp_rewrite->feeds as $feed_name ) {
+			$feedregex2 .= $feed_name . '|';
+		}
+		$feedregex2 = '(' . trim( $feedregex2, '|' ) . ')/?$';
+
+		/*
+		 * $feedregex is identical but with /feed/ added on as well, so URLs like <permalink>/feed/atom
+		 * and <permalink>/atom are both possible
+		 */
+		$feedregex = $wp_rewrite->feed_base . '/' . $feedregex2;
+		$feedbase = $wp_rewrite->feed_base;
 
 		if ( is_post_type_translated( $post_type ) && self::is_slug_translation_on( $post_type ) ) {
 			$languages = $sitepress->get_active_languages();
@@ -2137,6 +2250,18 @@ class GeoDir_Multilingual_WPML {
 				$translated_slug = self::get_translated_cpt_slug( $cpt_slug, $post_type, $lang_code );
 
 				if ( $translated_slug != $cpt_slug ) {
+					// Add rule for /feed/(feed|atom|rss|rss2|rdf).
+					$geodir_location_permalinks->add_rewrite_rule(
+						'^' . $translated_slug . '/' . trailingslashit( $tag_base ) . implode( "", array_fill( 0, count( $tag_query_vars ) , '([^/]*)/' ) ) . $feedregex,
+						$redirect . implode( '&', $tag_query_vars ) . '&feed=$matches[' . ( $tag_match + 1 ) . ']',
+						$after
+					);
+					// Add rule for /(feed|atom|rss|rss2|rdf) (see comment near creation of $feedregex).
+					$geodir_location_permalinks->add_rewrite_rule(
+						'^' . $translated_slug . '/' . trailingslashit( $tag_base ) . implode( "", array_fill( 0, count( $tag_query_vars ) , '([^/]*)/' ) ) . $feedregex2,
+						$redirect . implode( '&', $tag_query_vars ) . '&feed=$matches[' . ( $tag_match + 1 ) . ']',
+						$after
+					);
 					// paged
 					$geodir_location_permalinks->add_rewrite_rule(
 						'^' . $translated_slug . '/' . trailingslashit($tag_base) . implode( "", array_fill( 0, count( $tag_query_vars ) , '([^/]*)/' ) ) . 'page/?([0-9]{1,})/?$',
