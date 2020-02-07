@@ -38,6 +38,9 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 
 == Changelog ==
 
+= 2.0.0.10 =
+* Map is not working on listing preview page - FIXED
+
 = 2.0.0.9 =
 * Rewrite rules conflict with translated location page slug - FIXED
 * Unable to set source language post in import post - FIXED

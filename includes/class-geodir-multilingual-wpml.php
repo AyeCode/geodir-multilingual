@@ -1377,6 +1377,11 @@ class GeoDir_Multilingual_WPML {
 	public static function rest_markers_query_join( $join, $request ) {
 		global $wpdb;
 
+		// Skip for single post.
+		if ( ! empty( $request['post'] ) && is_array( $request['post'] ) && count( $request['post'] ) === 1 ) {
+			return $join;
+		}
+
 		if ( ! empty( $request['post_type'] ) ) {
 			$wpml_join = self::filter_single_type_join( '', $request['post_type'] );
 			$wpml_join = str_replace( array( "\t{$wpdb->posts}.", " {$wpdb->posts}." ), array( "\tp.", " p." ), $wpml_join );
@@ -1389,6 +1394,11 @@ class GeoDir_Multilingual_WPML {
 
 	public static function rest_markers_query_where( $where, $request ) {
 		global $wpdb;
+
+		// Skip for single post.
+		if ( ! empty( $request['post'] ) && is_array( $request['post'] ) && count( $request['post'] ) === 1 ) {
+			return $where;
+		}
 
 		if ( ! empty( $request['post_type'] ) ) {
 			$wpml_where = self::filter_single_type_where( '', $request['post_type'] );
