@@ -565,17 +565,17 @@ class GeoDir_Multilingual_WPML {
 			$slug = $post_types[ $post_type ]['rewrite']['slug'];
 
 			// Alter the CPT slug if WPML is set to do so
-			if ( is_post_type_translated( $post_type ) ) {
-				if ( self::is_slug_translation_on( $post_type ) && ( $language_code = self::get_lang_from_url( $link ) ) ) {
-					$org_slug = $slug;
+			if ( is_post_type_translated( $post_type ) && self::is_slug_translation_on( $post_type ) && ( $language_code = self::get_lang_from_url( $link ) ) ) {
+				$translated_slug = self::get_translated_cpt_slug( $slug, $post_type, $language_code );
 
-					$slug = self::get_translated_cpt_slug( $slug, $post_type, $language_code );
+				if ( ! empty( $translated_slug ) && is_string( $translated_slug ) ) {
+					$slash_helper = new WPML_Slash_Management();
+					$link_parts = explode( '?', $link, 2 );
 
-					if ( ! $slug ) {
-						$slug = $org_slug;
-					} else {
-						$link = str_replace( $org_slug, $slug, $link );
-					}
+					$pattern = '#\/' . preg_quote( $slug, '#' ) . '\/#';
+					$link_new = trailingslashit( preg_replace( $pattern, '/' . $translated_slug . '/', trailingslashit( $link_parts[0] ), 1 ) );
+					$link = $slash_helper->match_trailing_slash_to_reference( $link_new, $link_parts[0] );
+					$link = isset( $link_parts[1] ) ? $link . '?' . $link_parts[1] : $link;
 				}
 			}
 		}
@@ -584,22 +584,31 @@ class GeoDir_Multilingual_WPML {
 	}
 
 	public static function term_link( $term_link, $term, $taxonomy ) {
+		global $sitepress;
+
 		$post_types = geodir_get_posttypes('array');
 		$post_type = str_replace("category","",$taxonomy);
 		$post_type = str_replace("_tags","",$post_type);
 		$slug = $post_types[$post_type]['rewrite']['slug'];
+
 		if ( is_post_type_translated( $post_type ) && self::is_slug_translation_on( $post_type ) ) {
-			global $sitepress;
 			$default_lang = $sitepress->get_default_language();
 			$language_code = self::get_lang_from_url( $term_link );
 			if ( ! $language_code ) {
 				$language_code  = $default_lang;
 			}
 
-			$org_slug = $slug;
-			$slug = self::get_translated_cpt_slug( $slug, $post_type, $language_code );
+			$translated_slug = self::get_translated_cpt_slug( $slug, $post_type, $language_code );
 
-			$term_link = trailingslashit( preg_replace( "/" . preg_quote( $org_slug, "/" ) . "/", $slug, $term_link, 1 ) );
+			if ( ! empty( $translated_slug ) && is_string( $translated_slug ) ) {
+				$slash_helper = new WPML_Slash_Management();
+				$link_parts = explode( '?', $term_link, 2 );
+
+				$pattern = '#\/' . preg_quote( $slug, '#' ) . '\/#';
+				$link_new = trailingslashit( preg_replace( $pattern, '/' . $translated_slug . '/', trailingslashit( $link_parts[0] ), 1 ) );
+				$term_link = $slash_helper->match_trailing_slash_to_reference( $link_new, $link_parts[0] );
+				$term_link = isset( $link_parts[1] ) ? $term_link . '?' . $link_parts[1] : $term_link;
+			}
 		}
 
 		return $term_link;
@@ -2556,7 +2565,7 @@ class GeoDir_Multilingual_WPML {
 	}
 
 	/**
-	 * @since 2.0.0.68
+	 * @since 2.0.0.9
 	 */
 	public static function import_post_before( $gd_post ) {
 		global $gd_wpml_switch_post_lang;
@@ -2573,7 +2582,7 @@ class GeoDir_Multilingual_WPML {
 	}
 
 	/**
-	 * @since 2.0.0.68
+	 * @since 2.0.0.9
 	 */
 	public static function import_post_after( $gd_post, $success = false ) {
 		global $gd_wpml_switch_post_lang;
@@ -2584,7 +2593,7 @@ class GeoDir_Multilingual_WPML {
 	}
 
 	/**
-	 * @since 2.0.0.68
+	 * @since 2.0.0.9
 	 */
 	public static function save_post_temp_data( $gd_post, $post, $update ) {
 		global $sitepress, $gd_wpml_switch_post_lang;
