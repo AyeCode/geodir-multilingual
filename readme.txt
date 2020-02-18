@@ -41,6 +41,7 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 = 2.0.0.10 =
 * Map is not working on listing preview page - FIXED
 * Language code in CPT slug results in unexpected slug translation - FIXED
+* Duplicate event post does not duplicates event schedules - FIXED
 
 = 2.0.0.9 =
 * Rewrite rules conflict with translated location page slug - FIXED
