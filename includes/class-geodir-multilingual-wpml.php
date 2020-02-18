@@ -95,7 +95,10 @@ class GeoDir_Multilingual_WPML {
 		// Pricing manager
 		add_filter( 'geodir_wpi_allow_invoice_for_listing', array( __CLASS__, 'allow_invoice_for_listing' ), 10, 2 );
 
-		// Add rewrite ruless for translated slugs
+		// Event Manager
+		add_filter( 'geodir_event_calendar_extra_params', array( __CLASS__, 'event_calendar_extra_params' ), 10, 1 );
+
+		// Add rewrite rules for translated slugs
 		add_action( 'geodir_permalinks_post_rewrite_rule', array( __CLASS__, 'permalinks_post_rewrite_rule' ), 10, 6 );
 		add_action( 'geodir_permalinks_author_rewrite_rule', array( __CLASS__, 'permalinks_author_rewrite_rule' ), 10, 6 );
 		add_action( 'geodir_location_permalinks_post_rewrite_rule', array( __CLASS__, 'location_permalinks_post_rewrite_rule' ), 10, 7 );
@@ -672,6 +675,11 @@ class GeoDir_Multilingual_WPML {
 
 				// Duplicate post files
 				self::duplicate_post_files($master_post_id, $tr_post_id, $lang);
+
+				// Duplicate event schedules
+				if ( GeoDir_Post_types::supports( $post_type, 'events' ) ) {
+					self::duplicate_event_schedules( $master_post_id, $tr_post_id, $lang );
+				}
 			}
 			
 			// Sync post reviews
@@ -973,6 +981,42 @@ class GeoDir_Multilingual_WPML {
 		}
 
 		return $tr_review_id;
+	}
+
+	/**
+	 * Duplicate event schedules for WPML translation post.
+	 *
+	 * @since 2.0.0.10
+	 *
+	 * @global object $wpdb WordPress Database object.
+	 *
+	 * @param int $master_post_id Original Post ID.
+	 * @param int $tr_post_id Translation Post ID.
+	 * @param string $lang Language code for translating post.
+	 * @return bool True for success, False for fail.
+	 */
+	public static function duplicate_event_schedules( $master_post_id, $tr_post_id, $lang ) {
+		global $wpdb;
+
+		if ( ! class_exists( 'GeoDir_Event_Schedules' ) ) {
+			return false;
+		}
+
+		$results = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM " . GEODIR_EVENT_SCHEDULES_TABLE . " WHERE event_id = %d ORDER BY schedule_id ASC", array( $master_post_id ) ) );
+		$schedules = array();
+
+		if ( ! empty( $results ) ) {
+			foreach ( $results as $key => $row ) {
+				$schedule = (array) $row;
+				unset( $schedule['schedule_id'] );
+				$schedule['event_id'] = $tr_post_id;
+
+				$schedules[] = $schedule;
+			}
+		}
+
+		// Create schedules
+		return GeoDir_Event_Schedules::create_schedules( $schedules, $tr_post_id );
 	}
 
 	/**
@@ -2618,5 +2662,16 @@ class GeoDir_Multilingual_WPML {
 		}
 
 		return $gd_post;
+	}
+
+	/**
+	 * @since 2.0.0.10
+	 */
+	public static function event_calendar_extra_params( $params = '' ) {
+		if ( $lang = self::get_current_language() ) {
+			$params .= '&lang=' . $lang;
+		}
+
+		return $params;
 	}
 }
