@@ -2,9 +2,9 @@
 Contributors: stiofansisland, paoltaia, ayecode
 Tags: geodirectory, geodirectory multilingual, localization, language, multilingual, translation, WPML
 Author URI: https://wpgeodirectory.com/
-Plugin URI: https://wpgeodirectory.com/downloads/multilingual/
+Plugin URI: https://wpgeodirectory.com/downloads/wpml-multilingual/
 Requires at least: 4.9
-Tested up to: 5.3.2
+Tested up to: 5.4
 Stable tag: 2.0.0.9
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
