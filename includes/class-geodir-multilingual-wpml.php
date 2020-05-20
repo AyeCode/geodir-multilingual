@@ -298,9 +298,9 @@ class GeoDir_Multilingual_WPML {
 		global $sitepress;
 
 		if ( wpml_is_ajax() && ! is_user_logged_in() ) {
-			
 			$cookie_setting_field = class_exists( 'WPML_Cookie_Setting' ) ? $sitepress->get_setting( WPML_Cookie_Setting::COOKIE_SETTING_FIELD ) : false;
-			if ( ! $cookie_setting_field && empty( $_GET['lang'] ) && !( !empty( $_SERVER['REQUEST_URI'] ) && preg_match( '@\.(css|js|png|jpg|gif|jpeg|bmp)@i', basename( preg_replace( '@\?.*$@', '', $_SERVER['REQUEST_URI'] ) ) ) ) ) {				
+
+			if ( ! $cookie_setting_field && empty( $_GET['lang'] ) && !( !empty( $_SERVER['REQUEST_URI'] ) && preg_match( '@\.(css|js|png|jpg|gif|jpeg|bmp)@i', basename( preg_replace( '@\?.*$@', '', $_SERVER['REQUEST_URI'] ) ) ) ) ) {
 				global $sitepress;
 				
 				$referer = wp_get_referer();
