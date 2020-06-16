@@ -38,6 +38,9 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 
 == Changelog ==
 
+= 2.0.0.11 =
+* Import for translated category not working - FIXED
+
 = 2.0.0.10 =
 * Map is not working on listing preview page - FIXED
 * Language code in CPT slug results in unexpected slug translation - FIXED

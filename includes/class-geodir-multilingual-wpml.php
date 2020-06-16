@@ -1641,10 +1641,13 @@ class GeoDir_Multilingual_WPML {
 	}
 
 	public static function category_imported( $term_id, $term_data ) {
+		global $sitepress;
+
 		if ( ! empty( $term_id ) && ! empty( $term_data['cat_language'] ) && ! empty( $term_data['cat_id_original'] ) && is_taxonomy_translated( $term_data['taxonomy'] ) ) {
 			$element_type = 'tax_' . $term_data['taxonomy'];
 			$trid = $sitepress->get_element_trid( (int) $term_data['cat_id_original'], $element_type );
 			$source_lang = self::get_language_for_element( $term_id, $element_type );
+
 			if ( ! $source_lang ) {
 				$source_lang = self::get_default_language();
 			}
