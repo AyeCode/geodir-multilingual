@@ -5,7 +5,7 @@ Author URI: https://wpgeodirectory.com/
 Plugin URI: https://wpgeodirectory.com/downloads/wpml-multilingual/
 Requires at least: 4.9
 Tested up to: 5.4
-Stable tag: 2.0.0.10
+Stable tag: 2.0.1.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -38,7 +38,7 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 
 == Changelog ==
 
-= 2.0.0.11 =
+= 2.0.1.0 =
 * Import for translated category not working - FIXED
 
 = 2.0.0.10 =
