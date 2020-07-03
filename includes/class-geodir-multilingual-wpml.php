@@ -29,7 +29,7 @@ class GeoDir_Multilingual_WPML {
 		add_filter( 'geodir_post_permalink_structure_cpt_slug', array( __CLASS__, 'post_permalink_structure_cpt_slug' ), 10, 3 );
 		add_filter( 'geodir_post_url_filter_term', array( __CLASS__, 'post_url_filter_term' ), 10, 3 );
 		add_filter( 'geodir_cpt_permalink_rewrite_slug', array( __CLASS__, 'cpt_permalink_rewrite_slug' ), 10, 3 );
-		add_filter( 'geodir_cpt_template_pages', array( __CLASS__, 'cpt_template_pages' ), 10, 1 );
+		add_filter( 'geodir_cpt_template_pages', array( __CLASS__, 'cpt_template_pages' ), 10, 2 );
 		add_filter( 'post_type_archive_link', array( __CLASS__, 'post_type_archive_link' ), 1000, 2 );
 		add_filter( 'geodir_term_link', array( __CLASS__, 'term_link' ), 10, 3 );
 		add_filter( 'geodir_posts_join', array( __CLASS__, 'posts_join' ), 10, 2 );
@@ -529,7 +529,7 @@ class GeoDir_Multilingual_WPML {
 		return $slug;
 	}
 
-	public static function cpt_template_pages( $page_ids ) {
+	public static function cpt_template_pages( $page_ids, $page = '' ) {
 		if ( ! empty( $page_ids ) ) {
 			$tr_page_ids = array();
 
