@@ -83,4 +83,4 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 * Version jump to v2 to represent GDv2 compatibility - CHANGED
 
 = 1.0.0.0-beta =
-Initial release.
+* Initial release.
