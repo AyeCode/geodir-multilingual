@@ -66,6 +66,8 @@ class GeoDir_Multilingual_WPML {
 		add_filter( 'wpml_copy_from_original_custom_fields', array( __CLASS__, 'copy_from_original_custom_fields' ), 10, 1 );
 		add_filter( 'geodir_cpt_post_type_archive_link_slug', array( __CLASS__, 'post_type_archive_link_slug' ), 10, 3 );
 		add_filter( 'geodir_rest_url', array( __CLASS__, 'rest_url' ), 10, 4 );
+		add_filter( 'geodir_ninja_form_widget_action_text', array( __CLASS__, 'register_dynamic_string' ), 99, 3 );
+		add_filter( 'geodir_claim_widget_button_text', array( __CLASS__, 'register_dynamic_string' ), 99, 3 );
 
 		add_action( 'sanitize_comment_cookies', array( __CLASS__, 'ajax_set_guest_lang' ), 1 );
 		add_action( 'icl_make_duplicate', array( __CLASS__, 'make_duplicate' ), 11, 4 );
@@ -89,8 +91,8 @@ class GeoDir_Multilingual_WPML {
 		add_action( 'geodir_bp_reviews_count_where', array( __CLASS__, 'geodir_bp_reviews_count_where' ), 10, 2 );
 
 		if ( $sitepress->get_setting( 'sync_comments_on_duplicates' ) ) {
-            add_action( 'comment_post', array( __CLASS__, 'sync_comment' ), 100, 1 );
-        }
+			add_action( 'comment_post', array( __CLASS__, 'sync_comment' ), 100, 1 );
+		}
 
 		// Pricing manager
 		add_filter( 'geodir_wpi_allow_invoice_for_listing', array( __CLASS__, 'allow_invoice_for_listing' ), 10, 2 );
@@ -1333,6 +1335,21 @@ class GeoDir_Multilingual_WPML {
 	 */
 	public static function translate_string( $string, $domain = 'geodirectory', $name = '', $language_code = NULL ) {
 		return apply_filters( 'wpml_translate_single_string', $string, $domain, $name, $language_code );
+	}
+
+	/**
+	 * Registers a dynamic text string for WPML translation.
+	 *
+	 * @since 2.0.1.1
+	 *
+	 * @param string $string The string that needs to be translated.
+	 * @param int $post_ID The post ID.
+	 * @param array $args Array of arguments.
+	 */
+	public static function register_dynamic_string( $string, $post_ID = 0, $args = array() ) {
+		self::register_string( $string );
+
+		return $string;
 	}
 
 	public static function get_post_type_slug( $post_type ) {

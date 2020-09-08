@@ -38,6 +38,9 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 
 == Changelog ==
 
+= 2.0.1.1 =
+* Register some dynamic strings for WPML translation - CHANGED
+
 = 2.0.1.0 =
 * Import for translated category not working - FIXED
 
