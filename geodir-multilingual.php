@@ -1,23 +1,23 @@
 <?php
 /**
- * This is the main GeoDirectory Multilingual plugin file, here we declare and call the important stuff
+ * GeoDirectory Multilingual
  *
  * @package           GeoDir_Multilingual
- * @copyright         2018 AyeCode Ltd
- * @license           GPL-2.0+
- * @since             1.0.0
+ * @author            AyeCode Ltd
+ * @copyright         2019 AyeCode Ltd
+ * @license           GPLv3
  *
  * @wordpress-plugin
  * Plugin Name:       GeoDirectory Multilingual
  * Plugin URI:        https://wpgeodirectory.com/downloads/wpml-multilingual/
  * Description:       Allows running your directory fully multilingual with GeoDirectory and WPML.
  * Version:           2.0.1.0
- * Author:            AyeCode Ltd
- * Author URI:        https://wpgeodirectory.com/
  * Requires at least: 4.9
- * Tested up to:      5.4
- * License:           GPL-2.0+
- * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
+ * Requires PHP:      5.6
+ * Author:            AyeCode Ltd
+ * Author URI:        https://ayecode.io
+ * License:           GPLv3
+ * License URI:       http://www.gnu.org/licenses/gpl-3.0.html
  * Text Domain:       geodir-multilingual
  * Domain Path:       /languages
  * Update URL:        https://github.com/AyeCode/geodir-multilingual/
@@ -30,6 +30,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 if ( ! defined( 'GEODIR_MULTILINGUAL_VERSION' ) ) {
 	define( 'GEODIR_MULTILINGUAL_VERSION', '2.0.1.0' );
+}
+
+if ( ! defined( 'GEODIR_MULTILINGUAL_MIN_CORE' ) ) {
+	define( 'GEODIR_MULTILINGUAL_MIN_CORE', '2.1.0.0-beta' );
 }
 
 /**
@@ -46,6 +50,11 @@ function geodir_load_multilingual() {
 
 	if ( ! defined( 'GEODIR_MULTILINGUAL_PLUGIN_FILE' ) ) {
 		define( 'GEODIR_MULTILINGUAL_PLUGIN_FILE', __FILE__ );
+	}
+
+	// Min core version check
+	if ( ! function_exists( 'geodir_min_version_check' ) || ! geodir_min_version_check( 'Multilingual', GEODIR_MULTILINGUAL_MIN_CORE ) ) {
+		return '';
 	}
 
 	/**

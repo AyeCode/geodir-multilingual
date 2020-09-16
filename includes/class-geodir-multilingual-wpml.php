@@ -1113,6 +1113,10 @@ class GeoDir_Multilingual_WPML {
 	public static function post_detail_duplicates() {
 		global $gd_post, $preview, $sitepress;
 
+		if ( geodir_design_style() ) {
+			return self::post_detail_duplicates_aui();
+		}
+
 		$content = '';
 
 		if ( !empty( $gd_post->ID ) && !$preview && geodir_is_page( 'detail' ) && self::is_duplicate_allowed( $gd_post->ID ) ) {
@@ -1171,6 +1175,85 @@ class GeoDir_Multilingual_WPML {
 					$wpml_content .= '</tbody></table>';
 					$wpml_content .= '</div>';
 					
+					$content .= $wpml_content;
+				}
+			}
+		}
+		
+		return $content;
+	}
+
+	/**
+	 * Display WPML languages option in sidebar to allow authors to duplicate their listing.
+	 *
+	 * @since 2.1.0.0
+	 *
+	 * @global object $gd_post GeoDirectory post object.
+	 * @global bool $preview True if the current page is add listing preview page. False if not.
+	 * @global object $sitepress Sitepress WPML object.
+	 *
+	 * @return string Filtered html of the geodir_edit_post_link() function.
+	 */
+	public static function post_detail_duplicates_aui() {
+		global $gd_post, $preview, $sitepress;
+
+		$content = '';
+
+		if ( !empty( $gd_post->ID ) && !$preview && geodir_is_page( 'detail' ) && self::is_duplicate_allowed( $gd_post->ID ) ) {
+			$post_id = $gd_post->ID;
+			$element_type = 'post_' . get_post_type( $post_id );
+			$original_post_id = $sitepress->get_original_element_id( $post_id, $element_type, false, true );
+
+			if ( $original_post_id == $post_id ) {
+				$wpml_languages = $sitepress->get_active_languages();
+				$post_language = $sitepress->get_language_for_element( $post_id, $element_type );
+
+				if ( !empty( $wpml_languages ) && isset( $wpml_languages[ $post_language ] ) ) {
+					unset( $wpml_languages[ $post_language ] );
+				}
+
+				if ( !empty( $wpml_languages ) ) {
+					$trid  = $sitepress->get_element_trid( $post_id, $element_type );
+					$element_translations = $sitepress->get_element_translations( $trid, $element_type );
+					$duplicates = $sitepress->get_duplicates( $post_id );
+
+					$wpml_content = '<div class="card gd-detail-duplicate">';
+					$wpml_content .= '<table class="table table-md m-0 gd-duplicate-table"><thead><tr><th scope="col">' . __( 'Language', 'geodir-multilingual' ) . '</th><th scope="col" class="text-center">' . __( 'Translate', 'geodir-multilingual' ) . '</th></tr></thead><tbody>';
+
+					$needs_translation = false;
+
+					foreach ( $wpml_languages as $lang_code => $lang ) {
+						$duplicates_text = '';
+						$translated = false;
+
+						if ( !empty( $element_translations ) && isset( $element_translations[$lang_code] ) ) {
+							$translated = true;
+
+							if ( !empty( $duplicates ) && isset( $duplicates[$lang_code] ) ) {
+								$duplicates_text = ' ' . __( '(duplicate)', 'geodir-multilingual' );
+							}
+						} else {
+							$needs_translation = true;
+						}
+
+						$wpml_content .= '<tr><td>' . $lang['english_name'] . $duplicates_text . '</td><td class="text-center">';
+
+						if ( $translated ) {
+							$wpml_content .= '<span title="' . esc_attr__( 'Translated', 'geodir-multilingual' ) . '"><i class="fa fa-check text-success" aria-hidden="true"></i></span>';
+						} else {
+							$wpml_content .= '<input name="gd_icl_dup[]" aria-label="' . esc_attr__( 'Create duplicate', 'geodir-multilingual' ) . '" value="' . $lang_code . '" title="' . esc_attr__( 'Create duplicate', 'geodir-multilingual' ) . '" type="checkbox">';
+						}
+
+						$wpml_content .= '</td></tr>';
+					}
+
+					if ( $needs_translation ) {
+						$wpml_content .= '<tr><td></td><td class="text-center"><button data-nonce="' . esc_attr( wp_create_nonce( 'geodir-duplicate-post' ) ) . '" data-post-id="' . $post_id . '" id="gd_make_duplicates" class="btn btn-sm btn-primary"><i style="display:none" class="fa fa-spin fa-refresh mr-1" aria-hidden="true"></i>' . __( 'Duplicate', 'geodir-multilingual' ) . '</button></td></tr>';
+					}
+
+					$wpml_content .= '</tbody></table>';
+					$wpml_content .= '</div>';
+
 					$content .= $wpml_content;
 				}
 			}

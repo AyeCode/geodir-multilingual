@@ -29,6 +29,11 @@ function geodir_multilingual_wpml_duplicate(el, e) {
         jQuery('input[name="gd_icl_dup[]"]', $table).focus();
         return false;
     }
+
+    if (!confirm(geodir_multilingual_params.confirmDuplicate)) {
+        return false;
+    }
+
     var data = {
         action: 'geodir_wpml_duplicate',
         post_id: post_id,
