@@ -275,12 +275,15 @@ final class GeoDir_Multilingual {
 	 * Enqueue styles.
 	 */
 	public function add_styles() {
+		return; // No style to include.
 
-		// Register styles
-		wp_register_style( 'geodir-multilingual', GEODIR_MULTILINGUAL_PLUGIN_URL . '/assets/css/style.css', array(), GEODIR_MULTILINGUAL_VERSION );
+		if ( ! geodir_design_style() ) {
+			// Register styles
+			wp_register_style( 'geodir-multilingual', GEODIR_MULTILINGUAL_PLUGIN_URL . '/assets/css/style.css', array(), GEODIR_MULTILINGUAL_VERSION );
 
-		if ( geodir_is_page( 'detail' ) ) {
-			wp_enqueue_style( 'geodir-multilingual' );
+			if ( geodir_is_page( 'detail' ) ) {
+				wp_enqueue_style( 'geodir-multilingual' );
+			}
 		}
 	}
 

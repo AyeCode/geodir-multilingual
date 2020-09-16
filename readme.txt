@@ -1,13 +1,13 @@
 === GeoDirectory Multilingual ===
 Contributors: stiofansisland, paoltaia, ayecode
+Donate link: https://www.ko-fi.com/stiofan
 Tags: geodirectory, geodirectory multilingual, localization, language, multilingual, translation, WPML
-Author URI: https://wpgeodirectory.com/
-Plugin URI: https://wpgeodirectory.com/downloads/wpml-multilingual/
 Requires at least: 4.9
-Tested up to: 5.4
+Tested up to: 5.5
+Requires PHP: 5.6
 Stable tag: 2.0.1.0
-License: GPLv2 or later
-License URI: http://www.gnu.org/licenses/gpl-2.0.html
+License: GPLv3
+License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
 Allows running your directory fully multilingual with GeoDirectory and WPML.
 
@@ -38,8 +38,9 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 
 == Changelog ==
 
-= 2.0.1.1 =
+= 2.1.0.0 =
 * Register some dynamic strings for WPML translation - CHANGED
+* Changes for AyeCode UI compatibility - CHANGED
 
 = 2.0.1.0 =
 * Import for translated category not working - FIXED
