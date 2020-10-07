@@ -1,9 +1,9 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: GeoDirectory Multilingual 2.0.1.0\n"
+"Project-Id-Version: GeoDirectory Multilingual 2.1.0.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-07-01 11:25+0530\n"
-"PO-Revision-Date: 2020-07-01 11:26+0530\n"
+"POT-Creation-Date: 2020-10-07 17:29+0530\n"
+"PO-Revision-Date: 2020-10-07 17:29+0530\n"
 "Last-Translator: \n"
 "Language-Team: AyeCode Ltd <contact@ayecode.io>\n"
 "Language: en_US\n"
@@ -38,35 +38,44 @@ msgstr ""
 msgid "GeoDirectory"
 msgstr ""
 
-#: includes/class-geodir-multilingual-wpml.php:1134
+#: includes/class-geodir-multilingual-wpml.php:1140
 msgid "Translate Listing"
 msgstr ""
 
-#: includes/class-geodir-multilingual-wpml.php:1136
+#: includes/class-geodir-multilingual-wpml.php:1142
+#: includes/class-geodir-multilingual-wpml.php:1221
 msgid "Language"
 msgstr ""
 
-#: includes/class-geodir-multilingual-wpml.php:1136
+#: includes/class-geodir-multilingual-wpml.php:1142
+#: includes/class-geodir-multilingual-wpml.php:1221
 msgid "Translate"
 msgstr ""
 
-#: includes/class-geodir-multilingual-wpml.php:1148
+#: includes/class-geodir-multilingual-wpml.php:1154
+#: includes/class-geodir-multilingual-wpml.php:1233
 msgid "(duplicate)"
 msgstr ""
 
-#: includes/class-geodir-multilingual-wpml.php:1159
+#: includes/class-geodir-multilingual-wpml.php:1165
+#: includes/class-geodir-multilingual-wpml.php:1244
 msgid "Create duplicate"
 msgstr ""
 
-#: includes/class-geodir-multilingual-wpml.php:1166
+#: includes/class-geodir-multilingual-wpml.php:1172
+#: includes/class-geodir-multilingual-wpml.php:1251
 msgid "Duplicate"
 msgstr ""
 
-#: includes/class-geodir-multilingual-wpml.php:1203
+#: includes/class-geodir-multilingual-wpml.php:1242
+msgid "Translated"
+msgstr ""
+
+#: includes/class-geodir-multilingual-wpml.php:1288
 msgid "Translation can be done from original listing only."
 msgstr ""
 
-#: includes/class-geodir-multilingual-wpml.php:1206
+#: includes/class-geodir-multilingual-wpml.php:1291
 msgid "You are not allowed to translate this listing."
 msgstr ""
 
@@ -81,6 +90,10 @@ msgid ""
 "Your version of PHP is below the minimum PHP version required by "
 "GeoDirectory Multilingual. Please contact your host and request that your "
 "version be upgraded to 5.5 or later."
+msgstr ""
+
+#: includes/functions.php:27
+msgid "Are you sure to duplicate listing in selected languages?"
 msgstr ""
 
 #: includes/widgets/class-geodir-multilingual-widget-post-wpml-translation.php:29
