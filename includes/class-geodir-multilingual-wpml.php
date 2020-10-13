@@ -20,6 +20,7 @@ class GeoDir_Multilingual_WPML {
 	public static function init() {
 		global $sitepress;
 
+		add_filter( 'wpml_current_language', array( __CLASS__, 'wpml_current_language' ), 999, 1 );
 		add_filter( 'icl_ls_languages', array( __CLASS__, 'icl_ls_languages' ), 11, 1 );
 		add_filter( 'icl_lang_sel_copy_parameters', array( __CLASS__, 'icl_lang_sel_copy_parameters' ), 11, 1 );
 		add_filter( 'geodir_get_page_id', array( __CLASS__, 'get_page_id' ), 10, 4 );
@@ -2778,5 +2779,50 @@ class GeoDir_Multilingual_WPML {
 		}
 
 		return $params;
+	}
+
+	/**
+	 * Filter WPML current language.
+	 *
+	 * @since 2.1.0.1
+	 *
+	 * @global object $sitepress Sitepress WPML object.
+	 *
+	 * @param string|null $lang Language code.
+	 * @return string|null Language code.
+	 */
+	public static function wpml_current_language( $lang = null ) {
+		global $sitepress;
+
+		if ( ! empty( $_POST['action'] ) && $_POST['action'] == 'nf_ajax_submit' && ! empty( $_POST['formData'] ) && wp_doing_ajax() ) {
+			$form_data = json_decode( $_POST['formData'], TRUE  );
+			if ( empty( $form_data ) ) {
+				$form_data = json_decode( stripslashes( $_POST['formData'] ), TRUE  );
+			}
+
+			if ( ! empty( $form_data ) && is_array( $form_data ) && ! empty( $form_data['settings']['siteLocale'] ) && self::is_geodirectory_ninja_form( $form_data ) ) {
+				$_lang = $sitepress->get_language_code_from_locale( $form_data['settings']['siteLocale'] );
+
+				if ( $_lang ) {
+					$lang = $_lang;
+				}
+			}
+		}
+
+		return $lang;
+	}
+
+	/* Check ninja form is GeoDirectory form.
+	 *
+	 * @since 2.1.0.1
+	 *
+	 * @param array $form_data Form data.
+	 * @return bool True if GeoDirectory form else False.
+	 */
+	public static function is_geodirectory_ninja_form( $form_data ) {
+		$key = ! empty( $form_data['settings']['key'] ) ? $form_data['settings']['key'] : null;
+		$check = $key && in_array( $key, array( 'geodirectory_contact', 'geodirectory_claim' ) ) ? true : false;
+
+		return apply_filters( 'wpml_is_geodirectory_ninja_form', $check, $key, $form_data );
 	}
 }

@@ -38,6 +38,9 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 
 == Changelog ==
 
+= 2.1.0.1 =
+* GeoDirectory Ninja forms confirm message are not translated - FIXED
+
 = 2.1.0.0 =
 * Register some dynamic strings for WPML translation - CHANGED
 * Changes for AyeCode UI compatibility - CHANGED
