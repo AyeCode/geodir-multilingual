@@ -40,6 +40,8 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 
 = 2.1.0.1 =
 * GeoDirectory Ninja forms confirm message are not translated - FIXED
+* WPML Advance Editor compatibility - ADDED
+* WPML configuration file functionality - ADDED
 
 = 2.1.0.0 =
 * Register some dynamic strings for WPML translation - CHANGED

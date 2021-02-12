@@ -2636,7 +2636,7 @@ class GeoDir_Multilingual_WPML {
 	 */
 	public static function get_post_metadata( $value, $object_id, $meta_key, $single ) {
 		if ( $meta_key == '_wpml_post_translation_editor_native' && ! empty( $object_id ) && geodir_is_gd_post_type( get_post_type( $object_id ) ) ) {
-			$value = 'yes';
+			//$value = 'yes';
 		}
 
 		return $value;
