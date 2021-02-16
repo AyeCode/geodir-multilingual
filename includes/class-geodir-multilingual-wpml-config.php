@@ -22,6 +22,10 @@ class GeoDir_Multilingual_WPML_Config {
 
 		// Tools
 		add_filter( 'geodir_debug_tools', array( __CLASS__, 'diagnostic_tools' ), 30, 1 );
+
+		if ( is_admin() ) {
+			add_filter( 'wpml_tm_translation_job_data', array( __CLASS__, 'wpml_tm_translation_job_data' ), 20, 2 );
+		}
 	}
 
 	/**
@@ -159,12 +163,12 @@ class GeoDir_Multilingual_WPML_Config {
 		}
 	}
 
-	public static function get_custom_fields() {
+	public static function get_custom_fields( $post_types = array() ) {
 		global $wpdb;
 
-		$post_types = geodir_get_posttypes( 'array' );
+		$post_types = ! empty( $post_types ) ? $post_types : array_keys( geodir_get_posttypes( 'array' ) );
 
-		$fields = $wpdb->get_results( "SELECT * FROM `" . GEODIR_CUSTOM_FIELDS_TABLE . "` WHERE is_active = 1 AND post_type IN ( '" . implode( "', '", array_keys( $post_types ) ) . "' ) GROUP BY htmlvar_name ORDER BY sort_order ASC" );
+		$fields = $wpdb->get_results( "SELECT * FROM `" . GEODIR_CUSTOM_FIELDS_TABLE . "` WHERE is_active = 1 AND post_type IN ( '" . implode( "', '", $post_types ) . "' ) GROUP BY htmlvar_name ORDER BY sort_order ASC" );
 
 		$_fields = array();
 
@@ -189,5 +193,27 @@ class GeoDir_Multilingual_WPML_Config {
 		}
 
 		return apply_filters( 'geodir_wpml_generate_xml_custom_fields', $_fields, $fields );
+	}
+
+	public static function wpml_tm_translation_job_data( $package, $post ) {
+		if ( geodir_is_gd_post_type( $post->post_type ) ) {
+			$tp = new WPML_Element_Translation_Package();
+
+			$custom_fields = self::get_custom_fields( array( $post->post_type ) );
+			$gd_post = geodir_get_post_info( $post->ID );
+
+			foreach ( $custom_fields as $key => $data ) {
+				$value = isset( $gd_post->{$key} ) ? $gd_post->{$key} : '';
+
+				$package['contents'][ $key ] = array(
+					'translate' => 1,
+					'data'      => $tp->encode_field_data( $value, 'base64' ),
+					'format'    => 'base64'
+				);
+			}
+
+		}
+
+		return $package;
 	}
 }

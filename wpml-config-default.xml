@@ -1,0 +1,13 @@
+<wpml-config>
+  <custom-types>
+    <custom-type translate="1">gd_place</custom-type>
+  </custom-types>
+  <taxonomies>
+    <taxonomy translate="1">gd_placecategory</taxonomy>
+    <taxonomy translate="1">gd_place_tags</taxonomy>
+  </taxonomies>
+  <custom-fields>
+    <custom-field action="translate">post_category</custom-field>
+    <custom-field action="translate">post_tags</custom-field>
+  </custom-fields>
+</wpml-config>
