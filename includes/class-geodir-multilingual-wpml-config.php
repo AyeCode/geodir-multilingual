@@ -18,14 +18,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 class GeoDir_Multilingual_WPML_Config {
 
 	public static function init() {
-		global $sitepress;
-
 		// Tools
 		add_filter( 'geodir_debug_tools', array( __CLASS__, 'diagnostic_tools' ), 30, 1 );
 
-		if ( is_admin() ) {
-			add_filter( 'wpml_tm_translation_job_data', array( __CLASS__, 'wpml_tm_translation_job_data' ), 20, 2 );
-		}
+		add_filter( 'wpml_tm_translation_job_data', array( __CLASS__, 'wpml_tm_translation_job_data' ), 20, 2 );
+		add_filter( 'wpml_pre_save_pro_translation', array( __CLASS__, 'wpml_pre_save_pro_translation' ), 20, 2 );
+		add_action( 'geodir_post_type_saved', array( __CLASS__, 'on_post_type_saved' ), 20, 3 );
 	}
 
 	/**
@@ -160,6 +158,11 @@ class GeoDir_Multilingual_WPML_Config {
 			$child_node_attr        = $dom->createAttribute( $data['type'] );
 			$child_node_attr->value = $data['value'];
 			$child_node->appendChild( $child_node_attr );
+			if ( ! empty( $data['style'] ) && ( $data['style'] == 'textarea' || $data['style'] == 'visual' ) ) {
+				$child_node_attr        = $dom->createAttribute( 'style' );
+				$child_node_attr->value = $data['style'];
+				$child_node->appendChild( $child_node_attr );
+			}
 		}
 	}
 
@@ -174,20 +177,79 @@ class GeoDir_Multilingual_WPML_Config {
 
 		if ( ! empty( $fields ) ) {
 			foreach ( $fields as $field ) {
-				if ( apply_filters( 'geodir_wpml_generate_xml_skip_custom_field', in_array( $field->htmlvar_name, array( 'post_title', 'post_content' ) ), $field ) ) {
+				$name = $field->htmlvar_name;
+
+				$skip = in_array( $name, array( 'post_title', 'post_content' ) ) || $field->field_type == 'fieldset' ? true : false;
+
+				if ( apply_filters( 'geodir_wpml_generate_xml_skip_custom_field', $skip, $name, $field ) ) {
 					continue;
 				}
 
-				$xml_fields = array();
-				$xml_fields[ $field->htmlvar_name ] = array(
+				if ( in_array( $name, array( 'post_category', 'post_tags', 'business_hours', 'claimed', 'event_dates', 'recurring', 'expire_date', 'package_id', 'franchise', 'franchise_fields', 'franchise_of' ) ) || in_array( $field->field_type, array( 'checkbox', 'radio', 'select', 'multiselect' ) ) ) {
+					$value = 'copy';
+				} else if ( in_array( $field->field_type, array( 'images', 'file' ) ) ) {
+					$value = 'ignore';
+				} else {
+					$value = 'translate';
+				}
+
+				// style
+				if ( $field->field_type == 'textarea' ) {
+					$style = 'textarea';
+				} else if ( $field->field_type == 'html' ) {
+					$style = 'visual';
+				} else {
+					$style = 'line';
+				}
+
+				$contents = array(
 					'type' => 'action',
-					'value' => apply_filters( 'geodir_wpml_generate_xml_custom_field_value', 'translate', $field->htmlvar_name, $field )
+					'value' => apply_filters( 'geodir_wpml_generate_xml_custom_field_value', $value, $name, $field ),
+					'style' => $style
 				);
 
-				$xml_fields = apply_filters( 'geodir_wpml_generate_xml_custom_field', $xml_fields, $field->htmlvar_name, $field );
+				$contents = apply_filters( 'geodir_wpml_generate_xml_custom_field', $contents, $name, $field );
 
-				if ( ! empty( $xml_fields ) ) {
-					$_fields = ! empty( $xml_fields ) ? array_merge( $_fields, $xml_fields ) : $xml_fields;
+				if ( $name == 'address' ) {
+					$name = 'street';
+				}
+
+				if ( ! empty( $contents ) ) {
+					$_fields[ 'field-' . $name ] = $contents;
+
+					if ( $name == 'post_category' ) {
+						$_fields[ 'field-default_category' ] = $contents;
+					} else if ( $name == 'street' ) {
+						$address_fields = array( 'city', 'region', 'country', 'neighbourhood', 'zip', 'latitude', 'longitude', 'mapview', 'mapzoom' );
+
+						foreach ( $address_fields as $address_field ) {
+							$value = 'translate';
+
+							if ( $address_field == 'country' || $address_field == 'latitude' || $address_field == 'longitude' || $address_field == 'zip' || $address_field == 'mapview' || $address_field == 'mapzoom' ) {
+								$value = 'copy';
+							}
+
+							if ( defined( 'GEODIRLOCATION_VERSION' ) ) {
+								if ( $address_field == 'neighbourhood' && ! (bool) GeoDir_Location_Neighbourhood::is_active() ) {
+									continue;
+								}
+
+								if ( geodir_get_option( 'lm_default_' . $address_field ) == 'default' ) {
+									$value = 'copy';
+								}
+							} else {
+								if ( $address_field == 'region' || $address_field == 'city' ) {
+									$value = 'copy';
+								}
+							}
+
+							$_fields[ 'field-' . $address_field ] = array(
+								'type' => 'action',
+								'value' => $value,
+								'style' => $style
+							);
+						}
+					}
 				}
 			}
 		}
@@ -199,21 +261,162 @@ class GeoDir_Multilingual_WPML_Config {
 		if ( geodir_is_gd_post_type( $post->post_type ) ) {
 			$tp = new WPML_Element_Translation_Package();
 
-			$custom_fields = self::get_custom_fields( array( $post->post_type ) );
-			$gd_post = geodir_get_post_info( $post->ID );
+			$package_id = geodir_get_post_package_id( (int) $post->ID, $post->post_type );
+			$fields = geodir_post_custom_fields( $package_id, 'all', $post->post_type );
+			$gd_post = geodir_get_post_info( (int) $post->ID );
 
-			foreach ( $custom_fields as $key => $data ) {
-				$value = isset( $gd_post->{$key} ) ? $gd_post->{$key} : '';
+			foreach ( $fields as $key => $field ) {
+				$name = $field['name'];
 
-				$package['contents'][ $key ] = array(
-					'translate' => 1,
+				$skip = in_array( $name, array( 'post_title', 'post_content' ) ) || $field['field_type'] == 'fieldset' ? true : false;
+
+				if ( apply_filters( 'geodir_wpml_tm_translation_job_data_skip_cf', $skip, $name, $field, $package, $post ) ) {
+					continue;
+				}
+
+				if ( in_array( $name, array( 'post_category', 'post_tags', 'business_hours', 'claimed', 'event_dates', 'recurring', 'expire_date', 'package_id', 'franchise', 'franchise_fields', 'franchise_of' ) ) || in_array( $field['field_type'], array( 'checkbox', 'radio', 'select', 'multiselect' ) ) ) {
+					$translate = 0;
+				} else if ( in_array( $field['field_type'], array( 'images', 'file' ) ) ) {
+					$translate = 0;
+				} else {
+					$translate = 1;
+				}
+
+				if ( $name == 'address' ) {
+					$name = 'street';
+				}
+
+				$value = isset( $gd_post->{$name} ) ? $gd_post->{$name} : '';
+
+				$contents = array(
+					'translate' => $translate,
 					'data'      => $tp->encode_field_data( $value, 'base64' ),
 					'format'    => 'base64'
 				);
-			}
 
+				$contents = apply_filters( 'geodir_wpml_tm_translation_job_data_cf', $contents, $name, $field, $package, $post );
+
+				if ( ! empty( $contents ) ) {
+					$package['contents'][ 'field-' . $name ] = $contents;
+
+					if ( $name == 'post_category' ) {
+						$contents['data'] = $tp->encode_field_data( $gd_post->default_category, 'base64' );
+						$package['contents'][ 'field-default_category' ] = $contents;
+					} else if ( $name == 'street' ) {
+						$address_fields = array( 'city', 'region', 'country', 'neighbourhood', 'zip', 'latitude', 'longitude', 'mapview', 'mapzoom' );
+
+						foreach ( $address_fields as $address_field ) {
+							$value = isset( $gd_post->{$address_field} ) ? $gd_post->{$address_field} : '';
+							$translate = 1;
+
+							if ( $address_field == 'country' || $address_field == 'latitude' || $address_field == 'longitude' || $address_field == 'zip' || $address_field == 'mapview' || $address_field == 'mapzoom' ) {
+								$translate = 0;
+							}
+
+							if ( defined( 'GEODIRLOCATION_VERSION' ) ) {
+								if ( $address_field == 'neighbourhood' && ! (bool) GeoDir_Location_Neighbourhood::is_active() ) {
+									continue;
+								}
+
+								if ( geodir_get_option( 'lm_default_' . $address_field ) == 'default' ) {
+									$translate = 0;
+								}
+							} else {
+								if ( $address_field == 'region' || $address_field == 'city' ) {
+									$translate = 0;
+								}
+							}
+
+							$package['contents'][ 'field-' . $address_field ] = array(
+								'translate' => $translate,
+								'data'      => $tp->encode_field_data( $value, 'base64' ),
+								'format'    => 'base64'
+							);
+						}
+					}
+				}
+			}
 		}
 
 		return $package;
+	}
+
+	public static function wpml_pre_save_pro_translation( $postarr, $job ) {
+		global $iclTranslationManagement;
+
+		if ( ! geodir_is_gd_post_type( $postarr['post_type'] ) ) {
+			return $postarr;
+		}
+
+		$custom_fields = self::get_custom_fields( array( $postarr['post_type'] ) );
+
+		$element_type_prefix = $iclTranslationManagement->get_element_type_prefix_from_job( $job );
+		$original_post       = $iclTranslationManagement->get_post( $job->original_doc_id, $element_type_prefix );
+		$original_gd_post     = geodir_get_post_info( (int) $original_post->ID );
+
+		foreach ( $job->elements as $_field ) {
+			$field_type = $_field->field_type;
+
+			if ( isset( $custom_fields[ $field_type ] ) ) {
+				if ( strpos( $field_type, 'field-' ) === 0 ) {
+					$_fields = explode( 'field-', $field_type, 2 );
+					$field = $_fields[1];
+				} else {
+					$field = $field_type;
+				}
+
+				if ( ! empty( $original_gd_post ) && $custom_fields[ $field_type ]['value'] == 'copy' && isset( $original_gd_post->{$field} ) ) {
+					$value = $original_gd_post->{$field};
+				} else {
+					$value = self::decode_field_data( $_field->field_data_translated, $_field->field_format );
+				}
+
+				if ( $value !== '' ) {
+					$postarr[ $field ] = $value;
+				}
+			}
+		}
+
+		// change post_category to an array()
+		if ( ! empty( $postarr['post_category'] ) ) {
+			if ( empty( $postarr['post_category'] ) ) {
+				$postarr['tax_input'][$postarr['post_type'].'category'] = array();
+			} else {
+				$postarr['tax_input'][$postarr['post_type'].'category'] = array_map( 'trim', explode( ',', $postarr['post_category'] ) );
+			}
+			unset($postarr['post_category']);
+		}
+
+		// change post_tags to an array()
+		if ( ! empty( $postarr['post_tags'] ) ) {
+			if ( empty( $postarr['post_tags'] ) ) {
+				$postarr['tax_input'][$postarr['post_type'].'_tags'] = array();
+			} else {
+				$postarr['tax_input'][$postarr['post_type'].'_tags'] = array_map( 'trim', explode( ',', $postarr['post_tags'] ) );
+			}
+			unset($postarr['post_tags']);
+		}
+
+		return $postarr;
+	}
+
+	public static function decode_field_data( $data, $format ) {
+		if ( $format == 'base64' ) {
+			$data = base64_decode( $data );
+		} elseif ( $format == 'csv_base64' ) {
+			$exp = explode( ',', $data );
+			foreach ( $exp as $k => $e ) {
+				$exp[ $k ] = base64_decode( trim( $e, '"' ) );
+			}
+			$data = $exp;
+		}
+
+		return $data;
+	}
+
+	public static function on_post_type_saved( $post_type, $args, $new = false ) {
+		if ( $new ) {
+			self::generate_wpml_config();
+		}
 	}
 }
