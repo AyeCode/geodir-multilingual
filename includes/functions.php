@@ -10,17 +10,22 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
- /**
- * Register Widgets.
+/**
+ * Register widgets.
  *
- * @since 1.0.0
+ * @since 1.0.0.0
+ *
+ * @param array $widgets The list of available widgets.
+ * @return array Available GD widgets.
  */
-function goedir_multilingual_register_widgets() {
+function goedir_multilingual_register_widgets( $widgets ) {
 	if ( defined( 'ICL_SITEPRESS_VERSION' ) && ! ICL_PLUGIN_INACTIVE && class_exists( 'SitePress' ) && function_exists( 'icl_object_id' ) ) {
-		register_widget( 'GeoDir_Multilingual_Widget_Post_WPML_Translation' );
+		$widgets[] = 'GeoDir_Multilingual_Widget_Post_WPML_Translation';
 	}
+
+	return $widgets;
 }
-add_action( 'widgets_init', 'goedir_multilingual_register_widgets' );
+add_filter( 'geodir_get_widgets', 'goedir_multilingual_register_widgets', 10, 1 );
 
 function geodir_multilingual_params() {
 	$params = array(
