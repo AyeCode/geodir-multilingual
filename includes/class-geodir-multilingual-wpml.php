@@ -1120,63 +1120,90 @@ class GeoDir_Multilingual_WPML {
 
 		$content = '';
 
-		if ( !empty( $gd_post->ID ) && !$preview && geodir_is_page( 'detail' ) && self::is_duplicate_allowed( $gd_post->ID ) ) {
-			$post_id = $gd_post->ID;
-			$element_type = 'post_' . get_post_type( $post_id );
-			$original_post_id = $sitepress->get_original_element_id( $post_id, $element_type, false, true );
-			
-			if ( $original_post_id == $post_id ) {
-				$wpml_languages = $sitepress->get_active_languages();
-				$post_language = $sitepress->get_language_for_element( $post_id, $element_type );
+		if ( !empty( $gd_post->ID ) && !$preview && geodir_is_page( 'detail' ) ) {
+			if ( self::is_duplicate_allowed( $gd_post->ID ) ) {
+				$post_id = $gd_post->ID;
+				$element_type = 'post_' . get_post_type( $post_id );
+				$original_post_id = $sitepress->get_original_element_id( $post_id, $element_type, false, true );
 				
-				if ( !empty( $wpml_languages ) && isset( $wpml_languages[ $post_language ] ) ) {
-					unset( $wpml_languages[ $post_language ] );
-				}
-				
-				if ( !empty( $wpml_languages ) ) {
-					$trid  = $sitepress->get_element_trid( $post_id, $element_type );
-					$element_translations = $sitepress->get_element_translations( $trid, $element_type );
-					$duplicates = $sitepress->get_duplicates( $post_id );
+				if ( $original_post_id == $post_id ) {
+					$wpml_languages = $sitepress->get_active_languages();
+					$post_language = $sitepress->get_language_for_element( $post_id, $element_type );
 					
-					$wpml_content = '<div class="geodir-company_info gd-detail-duplicate"><h3 class="widget-title">' . __( 'Translate Listing', 'geodir-multilingual' ) . '</h3>';
-					$wpml_content .= '<table class="gd-duplicate-table" style="width:100%;margin:0"><tbody>';
-					$wpml_content .= '<tr style="border-bottom:solid 1px #efefef"><th style="padding:0 2px 2px 2px">' . __( 'Language', 'geodir-multilingual' ) . '</th><th style="width:25px;"></th><th style="width:5em;text-align:center">' . __( 'Translate', 'geodir-multilingual' ) . '</th></tr>';
+					if ( !empty( $wpml_languages ) && isset( $wpml_languages[ $post_language ] ) ) {
+						unset( $wpml_languages[ $post_language ] );
+					}
 					
-					$needs_translation = false;
-					
-					foreach ( $wpml_languages as $lang_code => $lang ) {
-						$duplicates_text = '';
-						$translated = false;
+					if ( !empty( $wpml_languages ) ) {
+						$trid  = $sitepress->get_element_trid( $post_id, $element_type );
+						$element_translations = $sitepress->get_element_translations( $trid, $element_type );
+						$duplicates = $sitepress->get_duplicates( $post_id );
 						
-						if ( !empty( $element_translations ) && isset( $element_translations[$lang_code] ) ) {
-							$translated = true;
+						$wpml_content = '<div class="geodir-company_info gd-detail-duplicate"><h3 class="widget-title">' . __( 'Translate Listing', 'geodir-multilingual' ) . '</h3>';
+						$wpml_content .= '<table class="gd-duplicate-table" style="width:100%;margin:0"><tbody>';
+						$wpml_content .= '<tr style="border-bottom:solid 1px #efefef"><th style="padding:0 2px 2px 2px">' . __( 'Language', 'geodir-multilingual' ) . '</th><th style="width:25px;"></th><th style="width:5em;text-align:center">' . __( 'Translate', 'geodir-multilingual' ) . '</th></tr>';
+						
+						$needs_translation = false;
+						
+						foreach ( $wpml_languages as $lang_code => $lang ) {
+							$duplicates_text = '';
+							$translated = false;
 							
-							if ( !empty( $duplicates ) && isset( $duplicates[$lang_code] ) ) {
-								$duplicates_text = ' ' . __( '(duplicate)', 'geodir-multilingual' );
+							if ( !empty( $element_translations ) && isset( $element_translations[$lang_code] ) ) {
+								$translated = true;
+								
+								if ( !empty( $duplicates ) && isset( $duplicates[$lang_code] ) ) {
+									$duplicates_text = ' <span class="geodir-translation-status">' . __( '(duplicate)', 'geodir-multilingual' ) . '</span>';
+									$duplicates_text .= ' <a href="javascript:void(0)" title="' . esc_attr__( 'Disable the WPML duplication translation to translate independently.', 'geodir-multilingual' ) . '" class="geodir-tr-independent" data-post-id="' . absint( $duplicates[ $lang_code ] ) . '" data-nonce="' . esc_attr( wp_create_nonce( 'geodir_check_duplicates' ) ) . '">' . __( 'Translate Independently', 'geodir-multilingual' ) . '</a>&nbsp;<i style="display:none" class="fas fa-sync fa-spin"></i>';
+								}
+							} else {
+								$needs_translation = true;
 							}
-						} else {
-							$needs_translation = true;
+							
+							$wpml_content .= '<tr><td style="padding:4px">' . $lang['english_name'] . $duplicates_text . '</td><td>&nbsp;</td><td style="text-align:center;">';
+							
+							if ( $translated ) {
+								$wpml_content .= '<i class="fa fa-check" style="color:orange"></i>';
+							} else {
+								$wpml_content .= '<input name="gd_icl_dup[]" value="' . $lang_code . '" title="' . esc_attr__( 'Create duplicate', 'geodir-multilingual' ) . '" type="checkbox">';
+							}
+							
+							$wpml_content .= '</td></tr>';
 						}
 						
-						$wpml_content .= '<tr><td style="padding:4px">' . $lang['english_name'] . $duplicates_text . '</td><td>&nbsp;</td><td style="text-align:center;">';
-						
-						if ( $translated ) {
-							$wpml_content .= '<i class="fa fa-check" style="color:orange"></i>';
-						} else {
-							$wpml_content .= '<input name="gd_icl_dup[]" value="' . $lang_code . '" title="' . esc_attr__( 'Create duplicate', 'geodir-multilingual' ) . '" type="checkbox">';
+						if ( $needs_translation ) {
+							$wpml_content .= '<tr><td colspan="3" style="text-align:right"><i style="display:none" class="fas fa-sync fa-spin"></i> <button data-nonce="' . esc_attr( wp_create_nonce( 'geodir-duplicate-post' ) ) . '" data-post-id="' . $post_id . '" id="gd_make_duplicates" class="button-secondary">' . __( 'Duplicate', 'geodir-multilingual' ) . '</button></td></tr>';
 						}
 						
-						$wpml_content .= '</td></tr>';
+						$wpml_content .= '</tbody></table>';
+						$wpml_content .= '</div>';
+						
+						$content .= $wpml_content;
 					}
+				}
+			} elseif ( self::is_translate_independently_allowed( $gd_post->ID ) ) {
+				$post_id = $gd_post->ID;
+				$element_type = 'post_' . get_post_type( $post_id );
+				$original_post_id = $sitepress->get_original_element_id( $post_id, $element_type, false, true );
+				
+				if ( $original_post_id != $post_id ) {
+					$wpml_languages = $sitepress->get_active_languages();
+					$post_language = $sitepress->get_language_for_element( $post_id, $element_type );
 					
-					if ( $needs_translation ) {
-						$wpml_content .= '<tr><td colspan="3" style="text-align:right"><i style="display:none" class="fa fa-spin fa-refresh"></i> <button data-nonce="' . esc_attr( wp_create_nonce( 'geodir-duplicate-post' ) ) . '" data-post-id="' . $post_id . '" id="gd_make_duplicates" class="button-secondary">' . __( 'Duplicate', 'geodir-multilingual' ) . '</button></td></tr>';
+					if ( !empty( $wpml_languages ) && isset( $wpml_languages[ $post_language ] ) ) {
+						unset( $wpml_languages[ $post_language ] );
 					}
-					
-					$wpml_content .= '</tbody></table>';
-					$wpml_content .= '</div>';
-					
-					$content .= $wpml_content;
+
+					if ( !empty( $wpml_languages ) ) {
+						$trid  = $sitepress->get_element_trid( $post_id, $element_type );
+						$element_translations = $sitepress->get_element_translations( $trid, $element_type );
+						$duplicates = $sitepress->get_duplicates( $post_id );
+						
+						$content .= '<div class="geodir-company_info gd-detail-duplicate">';
+						$content .= wp_sprintf( __( 'This post is a duplicate of %s and it is translated via WPML duplicate translation.', 'geodir-multilingual' ), '<a href="' . esc_url( get_permalink( $original_post_id ) ) . '" target="_blank">' . get_the_title( $original_post_id ) . '</a>' );
+						$content .= '<br><br><a href="javascript:void(0)" title="' . esc_attr__( 'Disable the WPML duplication translation to translate independently.', 'geodir-multilingual' ) . '" class="geodir-tr-independent button button-secondary" data-post-id="' . absint( $post_id ) . '" data-nonce="' . esc_attr( wp_create_nonce( 'geodir_check_duplicates' ) ) . '" data-reload=1>' . __( 'Translate Independently', 'geodir-multilingual' ) . '</a>&nbsp;<i style="display:none" class="fas fa-sync fa-spin"></i>';
+						$content .= '</div>';
+					}
 				}
 			}
 		}
@@ -1200,66 +1227,93 @@ class GeoDir_Multilingual_WPML {
 
 		$content = '';
 
-		if ( !empty( $gd_post->ID ) && !$preview && geodir_is_page( 'detail' ) && self::is_duplicate_allowed( $gd_post->ID ) ) {
-			$post_id = $gd_post->ID;
-			$element_type = 'post_' . get_post_type( $post_id );
-			$original_post_id = $sitepress->get_original_element_id( $post_id, $element_type, false, true );
+		if ( !empty( $gd_post->ID ) && !$preview && geodir_is_page( 'detail' ) ) {
+			if ( self::is_duplicate_allowed( $gd_post->ID ) ) {
+				$post_id = $gd_post->ID;
+				$element_type = 'post_' . get_post_type( $post_id );
+				$original_post_id = $sitepress->get_original_element_id( $post_id, $element_type, false, true );
 
-			if ( $original_post_id == $post_id ) {
-				$wpml_languages = $sitepress->get_active_languages();
-				$post_language = $sitepress->get_language_for_element( $post_id, $element_type );
+				if ( $original_post_id == $post_id ) {
+					$wpml_languages = $sitepress->get_active_languages();
+					$post_language = $sitepress->get_language_for_element( $post_id, $element_type );
 
-				if ( !empty( $wpml_languages ) && isset( $wpml_languages[ $post_language ] ) ) {
-					unset( $wpml_languages[ $post_language ] );
-				}
+					if ( !empty( $wpml_languages ) && isset( $wpml_languages[ $post_language ] ) ) {
+						unset( $wpml_languages[ $post_language ] );
+					}
 
-				if ( !empty( $wpml_languages ) ) {
-					$trid  = $sitepress->get_element_trid( $post_id, $element_type );
-					$element_translations = $sitepress->get_element_translations( $trid, $element_type );
-					$duplicates = $sitepress->get_duplicates( $post_id );
+					if ( !empty( $wpml_languages ) ) {
+						$trid  = $sitepress->get_element_trid( $post_id, $element_type );
+						$element_translations = $sitepress->get_element_translations( $trid, $element_type );
+						$duplicates = $sitepress->get_duplicates( $post_id );
 
-					$wpml_content = '<div class="card gd-detail-duplicate">';
-					$wpml_content .= '<table class="table table-md m-0 gd-duplicate-table"><thead><tr><th scope="col">' . __( 'Language', 'geodir-multilingual' ) . '</th><th scope="col" class="text-center">' . __( 'Translate', 'geodir-multilingual' ) . '</th></tr></thead><tbody>';
+						$wpml_content = '<div class="card gd-detail-duplicate">';
+						$wpml_content .= '<table class="table table-md m-0 gd-duplicate-table"><thead><tr><th scope="col">' . __( 'Language', 'geodir-multilingual' ) . '</th><th scope="col" class="text-center">' . __( 'Translate', 'geodir-multilingual' ) . '</th></tr></thead><tbody>';
 
-					$needs_translation = false;
+						$needs_translation = false;
 
-					foreach ( $wpml_languages as $lang_code => $lang ) {
-						$duplicates_text = '';
-						$translated = false;
+						foreach ( $wpml_languages as $lang_code => $lang ) {
+							$duplicates_text = '';
+							$translated = false;
 
-						if ( !empty( $element_translations ) && isset( $element_translations[$lang_code] ) ) {
-							$translated = true;
+							if ( !empty( $element_translations ) && isset( $element_translations[$lang_code] ) ) {
+								$translated = true;
 
-							if ( !empty( $duplicates ) && isset( $duplicates[$lang_code] ) ) {
-								$duplicates_text = ' ' . __( '(duplicate)', 'geodir-multilingual' );
+								if ( !empty( $duplicates ) && isset( $duplicates[$lang_code] ) ) {
+									$duplicates_text = ' <span class="geodir-translation-status">' . __( '(duplicate)', 'geodir-multilingual' ) . '</span>';
+									$duplicates_text .= '<a href="javascript:void(0)" title="' . esc_attr__( 'Disable the WPML duplication translation to translate independently.', 'geodir-multilingual' ) . '" class="geodir-tr-independent btn btn-sm btn-secondary mt-2 clear-both" data-post-id="' . absint( $duplicates[ $lang_code ] ) . '" data-nonce="' . esc_attr( wp_create_nonce( 'geodir_check_duplicates' ) ) . '"><i style="display:none" class="fas fa-sync fa-spin mr-1"></i>' . __( 'Translate Independently', 'geodir-multilingual' ) . '</a>';
+								}
+							} else {
+								$needs_translation = true;
 							}
-						} else {
-							$needs_translation = true;
+
+							$wpml_content .= '<tr><td>' . $lang['english_name'] . $duplicates_text . '</td><td class="text-center">';
+
+							if ( $translated ) {
+								$wpml_content .= '<span title="' . esc_attr__( 'Translated', 'geodir-multilingual' ) . '"><i class="fa fa-check text-success" aria-hidden="true"></i></span>';
+							} else {
+								$wpml_content .= '<input name="gd_icl_dup[]" aria-label="' . esc_attr__( 'Create duplicate', 'geodir-multilingual' ) . '" value="' . $lang_code . '" title="' . esc_attr__( 'Create duplicate', 'geodir-multilingual' ) . '" type="checkbox">';
+							}
+
+							$wpml_content .= '</td></tr>';
 						}
 
-						$wpml_content .= '<tr><td>' . $lang['english_name'] . $duplicates_text . '</td><td class="text-center">';
-
-						if ( $translated ) {
-							$wpml_content .= '<span title="' . esc_attr__( 'Translated', 'geodir-multilingual' ) . '"><i class="fa fa-check text-success" aria-hidden="true"></i></span>';
-						} else {
-							$wpml_content .= '<input name="gd_icl_dup[]" aria-label="' . esc_attr__( 'Create duplicate', 'geodir-multilingual' ) . '" value="' . $lang_code . '" title="' . esc_attr__( 'Create duplicate', 'geodir-multilingual' ) . '" type="checkbox">';
+						if ( $needs_translation ) {
+							$wpml_content .= '<tr><td></td><td class="text-center"><button data-nonce="' . esc_attr( wp_create_nonce( 'geodir-duplicate-post' ) ) . '" data-post-id="' . $post_id . '" id="gd_make_duplicates" class="btn btn-sm btn-primary"><i style="display:none" class="fas fa-sync fa-spin mr-1" aria-hidden="true"></i>' . __( 'Duplicate', 'geodir-multilingual' ) . '</button></td></tr>';
 						}
 
-						$wpml_content .= '</td></tr>';
+						$wpml_content .= '</tbody></table>';
+						$wpml_content .= '</div>';
+
+						$content .= $wpml_content;
+					}
+				}
+			} elseif ( self::is_translate_independently_allowed( $gd_post->ID ) ) {
+				$post_id = $gd_post->ID;
+				$element_type = 'post_' . get_post_type( $post_id );
+				$original_post_id = $sitepress->get_original_element_id( $post_id, $element_type, false, true );
+				
+				if ( $original_post_id != $post_id ) {
+					$wpml_languages = $sitepress->get_active_languages();
+					$post_language = $sitepress->get_language_for_element( $post_id, $element_type );
+					
+					if ( !empty( $wpml_languages ) && isset( $wpml_languages[ $post_language ] ) ) {
+						unset( $wpml_languages[ $post_language ] );
 					}
 
-					if ( $needs_translation ) {
-						$wpml_content .= '<tr><td></td><td class="text-center"><button data-nonce="' . esc_attr( wp_create_nonce( 'geodir-duplicate-post' ) ) . '" data-post-id="' . $post_id . '" id="gd_make_duplicates" class="btn btn-sm btn-primary"><i style="display:none" class="fa fa-spin fa-refresh mr-1" aria-hidden="true"></i>' . __( 'Duplicate', 'geodir-multilingual' ) . '</button></td></tr>';
+					if ( !empty( $wpml_languages ) ) {
+						$trid  = $sitepress->get_element_trid( $post_id, $element_type );
+						$element_translations = $sitepress->get_element_translations( $trid, $element_type );
+						$duplicates = $sitepress->get_duplicates( $post_id );
+						
+						$content .= '<div class="geodir-company_info gd-detail-duplicate">';
+						$content .= wp_sprintf( __( 'This post is a duplicate of %s and it is translated via WPML duplicate translation.', 'geodir-multilingual' ), '<a href="' . esc_url( get_permalink( $original_post_id ) ) . '" target="_blank">' . get_the_title( $original_post_id ) . '</a>' );
+						$content .= '<a href="javascript:void(0)" title="' . esc_attr__( 'Disable the WPML duplication translation to translate independently.', 'geodir-multilingual' ) . '" class="geodir-tr-independent btn btn-secondary btn-sm clear-both mt-3" data-post-id="' . absint( $post_id ) . '" data-nonce="' . esc_attr( wp_create_nonce( 'geodir_check_duplicates' ) ) . '" data-reload=1><i style="display:none" class="fas fa-sync fa-spin mr-1"></i>' . __( 'Translate Independently', 'geodir-multilingual' ) . '</a>';
+						$content .= '</div>';
 					}
-
-					$wpml_content .= '</tbody></table>';
-					$wpml_content .= '</div>';
-
-					$content .= $wpml_content;
 				}
 			}
 		}
-		
+
 		return $content;
 	}
 
@@ -1292,6 +1346,38 @@ class GeoDir_Multilingual_WPML {
 					throw new Exception( __( 'You are not allowed to translate this listing.', 'geodir-multilingual' ) );
 				}
 			}
+			wp_send_json_success( $data );
+		} catch ( Exception $e ) {
+			wp_send_json_error( array( 'message' => $e->getMessage() ) );
+		}
+	}
+
+	/**
+	 * Set translate independently.
+	 *
+	 * @since 2.1.0.2
+	 *
+	 * @return mixed
+	 */
+	public static function translate_independently() {
+		check_ajax_referer( 'geodir_check_duplicates', 'security' );
+
+		$post_id = !empty( $_REQUEST['post_id'] ) ? absint( $_REQUEST['post_id'] ) : 0;
+
+		try {
+			$data = array();
+			if ( !empty( $post_id ) ) {
+				if ( self::is_translate_independently_allowed( $post_id ) ) {
+					delete_post_meta( $post_id, '_icl_lang_duplicate_of' );
+
+					wp_send_json_success( true );
+				} else {
+					throw new Exception( __( 'You are not allowed to manage translation for this listing.', 'geodir-multilingual' ) );
+				}
+			} else {
+				throw new Exception( __( 'You are not allowed to manage translation for this listing.', 'geodir-multilingual' ) );
+			}
+
 			wp_send_json_success( $data );
 		} catch ( Exception $e ) {
 			wp_send_json_error( array( 'message' => $e->getMessage() ) );
@@ -1339,6 +1425,49 @@ class GeoDir_Multilingual_WPML {
 		 * @param int $post_id The post ID.
 		 */
 		return apply_filters( 'geodir_multilingual_wpml_is_duplicate_allowed', $allowed, $post_id );
+	}
+
+	/**
+	 * Checks the user allowed to translate independently listing or not for WPML.
+	 *
+	 * @since 2.1.0.2
+	 *
+	 * @param int $post_id The post ID.
+	 * @return bool True if allowed.
+	 */
+	public static function is_translate_independently_allowed( $post_id ) {
+		$allowed = false;
+		
+		if ( empty( $post_id ) ) {
+			return $allowed;
+		}
+		
+		$user_id = (int)get_current_user_id();
+		
+		if ( empty( $user_id ) ) {
+			return $allowed;
+		}
+		
+		$post_type = get_post_type( $post_id );
+		if ( ! ( is_post_type_translated( $post_type ) && get_post_meta( $post_id, '_icl_lang_duplicate_of', true ) ) ) {
+			return $allowed;
+		}
+		
+		if ( geodir_listing_belong_to_current_user( $post_id ) ) {
+			$allowed = true;
+		}
+
+		if ( $allowed && ! self::allow_frontend_duplicate( $post_type ) ) {
+			$allowed = false;
+		}
+		
+		/**
+		 * Filter the user allowed to duplicate listing or not for WPML.
+		 *
+		 * @param bool $allowed True if allowed.
+		 * @param int $post_id The post ID.
+		 */
+		return apply_filters( 'geodir_multilingual_wpml_is_translate_independently_allowed', $allowed, $post_id );
 	}
 
 	/**

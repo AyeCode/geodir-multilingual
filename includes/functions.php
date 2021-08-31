@@ -24,7 +24,8 @@ add_action( 'widgets_init', 'goedir_multilingual_register_widgets' );
 
 function geodir_multilingual_params() {
 	$params = array(
-		'confirmDuplicate' => addslashes( __( 'Are you sure to duplicate listing in selected languages?', 'geodir-multilingual' ) )
+		'confirmDuplicate' => addslashes( __( 'Are you sure to duplicate listing in selected languages?', 'geodir-multilingual' ) ),
+		'confirmTranslateIndependently' => addslashes( __( 'Are you sure to make duplicated translation independent? WPML will set this post to be translated independently.', 'geodir-multilingual' ) )
 	);
 
 	return apply_filters( 'geodir_multilingual_params', $params );

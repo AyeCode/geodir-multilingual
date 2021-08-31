@@ -13,6 +13,12 @@ jQuery(function($) {
             $("input#icl_cfo").attr('onclick', 'geodir_multilingual_wpml_copy_from_original(this, \'' + lang + '\', ' + trid + ', \'' + trlang + '\')');
         }
     }
+
+    if ($('.geodir-tr-independent').length) {
+        $(".geodir-tr-independent").on("click", function(e) {
+            geodir_multilingual_wpml_remove_duplicate(this, e);
+        });
+    }
 });
 
 function geodir_multilingual_wpml_duplicate(el, e) {
@@ -26,7 +32,7 @@ function geodir_multilingual_wpml_duplicate(el, e) {
         dups.push(jQuery(this).val());
     });
     if (!dups.length || !post_id) {
-        jQuery('input[name="gd_icl_dup[]"]', $table).focus();
+        jQuery('input[name="gd_icl_dup[]"]', $table).trigger('focus');
         return false;
     }
 
@@ -48,7 +54,7 @@ function geodir_multilingual_wpml_duplicate(el, e) {
         cache: false,
         dataType: 'json',
         beforeSend: function(xhr) {
-            jQuery('.fa-refresh', $table).show();
+            jQuery('.fa-spin', $table).show();
             $btn.attr('disabled', 'disabled');
         },
         success: function(res, status, xhr) {
@@ -63,8 +69,55 @@ function geodir_multilingual_wpml_duplicate(el, e) {
             }
         }
     }).complete(function(xhr, status) {
-        jQuery('.fa-refresh', $table).hide();
+        jQuery('.fa-spin', $table).hide();
         $btn.removeAttr('disabled');
+    });
+}
+
+function geodir_multilingual_wpml_remove_duplicate(el, e) {
+    var $el = jQuery(el);
+    var $parent = jQuery(el).parent();
+    var nonce = jQuery(el).data('nonce');
+    var post_id = jQuery(el).data('post-id');
+
+    if (!confirm(geodir_multilingual_params.confirmTranslateIndependently)) {
+        return false;
+    }
+
+    var data = {
+        action: 'geodir_wpml_translate_independently',
+        post_id: post_id,
+        security: nonce
+    };
+
+    jQuery.ajax({
+        url: geodir_params.ajax_url,
+        data: data,
+        type: 'POST',
+        cache: false,
+        dataType: 'json',
+        beforeSend: function(xhr) {
+            jQuery('.fa-spin', $parent).show();
+            $el.attr('disabled', 'disabled');
+        },
+        success: function(res, status, xhr) {
+            if (typeof res == 'object' && res) {
+                if (res.data.message) {
+                    alert(res.data.message);
+                }
+                if (res.success) {
+                    if ($el.data('reload')) {
+                        window.location.href = document.location.href;
+                        return;
+                    }
+                    $el.remove();
+                    jQuery('.geodir-translation-status', $parent).remove();
+                }
+            }
+        }
+    }).complete(function(xhr, status) {
+        jQuery('.fa-spin', $parent).hide();
+        $el.removeAttr('disabled');
     });
 }
 
@@ -118,7 +171,7 @@ function geodir_multilingual_wpml_copy_from_original(el, lang, trid, trlang) {
                                 edInsertContent(edCanvas, res.builtin_custom_fields[element].value);
                             }
 
-							jQuery('body').trigger('geodir_multilingual_wpml_copy_editor_field', element, res, $form);
+                            jQuery('body').trigger('geodir_multilingual_wpml_copy_editor_field', element, res, $form);
                         } else {
                             var name = field.editor_name;
                             var type = field.editor_type;
@@ -212,7 +265,7 @@ function geodir_multilingual_wpml_copy_from_original(el, lang, trid, trlang) {
                                 }
                             }
 
-							jQuery('body').trigger('geodir_multilingual_wpml_copy_field', name, value, type, element, res, $form);
+                            jQuery('body').trigger('geodir_multilingual_wpml_copy_field', name, value, type, element, res, $form);
                         }
                     }
 
@@ -262,6 +315,6 @@ function geodir_multilingual_wpml_copy_external_custom_fields(custom_fields) {
     custom_fields.forEach(function(item) {
         meta_key_field.val(item.name);
         meta_value_field.val(item.value);
-        add_button.click();
+        add_button.trigger('click');
     });
 }
