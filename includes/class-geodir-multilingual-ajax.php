@@ -30,6 +30,7 @@ class GeoDir_Multilingual_AJAX {
 		// geodirectory_EVENT => nopriv
 		$ajax_events = array(
 			'wpml_duplicate'				=> true,
+			'wpml_translate_independently'	=> true,
 		);
 
 		foreach ( $ajax_events as $ajax_event => $nopriv ) {
@@ -46,5 +47,16 @@ class GeoDir_Multilingual_AJAX {
 
 	public static function wpml_duplicate() {
 		GeoDir_Multilingual_WPML::frontend_duplicate();
+	}
+
+	/**
+	 * Handle translate independently AJAX event.
+	 *
+	 * @since 2.1.0.2
+	 *
+	 * @return mixed
+	 */
+	public static function wpml_translate_independently() {
+		GeoDir_Multilingual_WPML::translate_independently();
 	}
 }
