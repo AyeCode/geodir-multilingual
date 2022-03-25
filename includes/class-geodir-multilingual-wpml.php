@@ -942,21 +942,24 @@ class GeoDir_Multilingual_WPML {
 			return false;
 		}
 
-		$post_type = get_post_type($master_post_id);
-		$post_table = $plugin_prefix . $post_type . '_detail';
-
-		$translated_post = $wpdb->get_row($wpdb->prepare("SELECT latitude, longitude, city, region, country FROM " . $post_table . " WHERE post_id = %d", $tr_post_id), ARRAY_A);
-		if (empty($translated_post)) {
-			return false;
-		}
-
 		$review['comment_id'] = $tr_comment_id;
 		$review['post_id'] = $tr_post_id;
-		$review['city'] = $translated_post['city'];
-		$review['region'] = $translated_post['region'];
-		$review['country'] = $translated_post['country'];
-		$review['latitude'] = $translated_post['latitude'];
-		$review['longitude'] = $translated_post['longitude'];
+
+		$post_type = get_post_type($master_post_id);
+
+		if ( GeoDir_Post_types::supports( $post_type, 'location' ) ) {
+			$post_table = $plugin_prefix . $post_type . '_detail';
+
+			$translated_post = $wpdb->get_row($wpdb->prepare("SELECT latitude, longitude, city, region, country FROM " . $post_table . " WHERE post_id = %d", $tr_post_id), ARRAY_A);
+
+			if ( ! empty( $translated_post ) ) {
+				$review['city'] = $translated_post['city'];
+				$review['region'] = $translated_post['region'];
+				$review['country'] = $translated_post['country'];
+				$review['latitude'] = $translated_post['latitude'];
+				$review['longitude'] = $translated_post['longitude'];
+			}
+		}
 
 		$tr_review_id = $wpdb->get_var($wpdb->prepare("SELECT comment_id FROM " . GEODIR_REVIEW_TABLE . " WHERE comment_id=%d AND post_id=%d ORDER BY comment_id ASC", $tr_comment_id, $tr_post_id));
 
@@ -970,7 +973,7 @@ class GeoDir_Multilingual_WPML {
 		if ($tr_post_id) {
 			GeoDir_Comments::update_post_rating($tr_post_id, $post_type);
 			
-			if (defined('GEODIRREVIEWRATING_VERSION') && geodir_get_option('geodir_reviewrating_enable_review') && $sitepress->get_setting('sync_comments_on_duplicates')) {
+			if (defined('GEODIR_REVIEWRATING_VERSION') && geodir_get_option('rr_enable_rate_comment') && $sitepress->get_setting('sync_comments_on_duplicates')) {
 				$wpdb->query($wpdb->prepare("DELETE FROM " . GEODIR_COMMENTS_REVIEWS_TABLE . " WHERE comment_id = %d", array($tr_comment_id)));
 				$likes = $wpdb->get_results($wpdb->prepare("SELECT * FROM " . GEODIR_COMMENTS_REVIEWS_TABLE . " WHERE comment_id=%d ORDER BY like_date ASC", $master_comment_id, $tr_post_id), ARRAY_A);
 
