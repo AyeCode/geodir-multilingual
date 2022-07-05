@@ -1,13 +1,24 @@
 <wpml-config>
   <custom-types>
-    <custom-type translate="1">gd_place</custom-type>
+    <custom-type translate="1" automatic="0">gd_place</custom-type>
   </custom-types>
   <taxonomies>
     <taxonomy translate="1">gd_placecategory</taxonomy>
     <taxonomy translate="1">gd_place_tags</taxonomy>
   </taxonomies>
   <custom-fields>
-    <custom-field action="translate">post_category</custom-field>
-    <custom-field action="translate">post_tags</custom-field>
+    <custom-field action="copy">field-post_category</custom-field>
+    <custom-field action="copy">field-default_category</custom-field>
+    <custom-field action="copy">field-post_tags</custom-field>
+    <custom-field action="translate">field-street</custom-field>
+    <custom-field action="translate">field-city</custom-field>
+    <custom-field action="translate">field-region</custom-field>
+    <custom-field action="copy">field-country</custom-field>
+    <custom-field action="copy">field-zip</custom-field>
+    <custom-field action="copy">field-latitude</custom-field>
+    <custom-field action="copy">field-longitude</custom-field>
+    <custom-field action="copy">field-mapview</custom-field>
+    <custom-field action="copy">field-mapzoom</custom-field>
+    <custom-field action="ignore">field-post_images</custom-field>
   </custom-fields>
 </wpml-config>

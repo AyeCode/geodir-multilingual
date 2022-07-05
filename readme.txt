@@ -40,6 +40,7 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 
 = 2.2 =
 * Review rating not properly duplicated on location-less post - FIXED
+* Sometime featured image missing for auto translated post - FIXED
 
 = 2.1.0.2 =
 * Allow switch duplicate translation to translate independently from frontend - ADDED
