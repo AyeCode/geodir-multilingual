@@ -686,7 +686,7 @@ class GeoDir_Multilingual_WPML {
 					self::duplicate_event_schedules( $master_post_id, $tr_post_id, $lang );
 				}
 			}
-			
+
 			// Sync post reviews
 			if ($sitepress->get_setting('sync_comments_on_duplicates')) {
 				self::duplicate_post_reviews($master_post_id, $tr_post_id, $lang);
@@ -798,24 +798,26 @@ class GeoDir_Multilingual_WPML {
 	 * @param string $lang Language code for translating post.
 	 * @return bool True for success, False for fail.
 	 */
-	public static function duplicate_post_images($master_post_id, $tr_post_id, $lang) {
+	public static function duplicate_post_images( $master_post_id, $tr_post_id, $lang, $save_featured = false ) {
 		global $wpdb;
 
-		$query = $wpdb->prepare("DELETE FROM " . GEODIR_ATTACHMENT_TABLE . " WHERE type = %s AND post_id = %d", array('post_images', $tr_post_id));
-		$wpdb->query($query);
+		$wpdb->query( $wpdb->prepare( "DELETE FROM " . GEODIR_ATTACHMENT_TABLE . " WHERE type = %s AND post_id = %d", array( 'post_images', $tr_post_id ) ) );
 
-		$query = $wpdb->prepare("SELECT * FROM " . GEODIR_ATTACHMENT_TABLE . " WHERE type = %s AND post_id = %d ORDER BY menu_order ASC", array('post_images', $master_post_id));
-		$post_images = $wpdb->get_results($query);
+		$post_images = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM " . GEODIR_ATTACHMENT_TABLE . " WHERE type = %s AND post_id = %d ORDER BY menu_order ASC", array( 'post_images', $master_post_id ) ) );
 
-		if ( !empty( $post_images ) ) {
-			foreach ( $post_images as $post_image) {
-				$image_data = (array)$post_image;
-				unset($image_data['ID']);
+		if ( ! empty( $post_images ) ) {
+			foreach ( $post_images as $post_image ) {
+				$image_data = (array) $post_image;
+				unset( $image_data['ID'] );
 				$image_data['post_id'] = $tr_post_id;
 
-				$wpdb->insert(GEODIR_ATTACHMENT_TABLE, $image_data);
+				if ( $save_featured && ! empty( $post_image->file ) && ( (int) $post_image->featured === 1 || (int) $post_image->menu_order === 0 ) ) {
+					geodir_save_post_meta( $tr_post_id, 'featured_image', $post_image->file );
+				}
+
+				$wpdb->insert( GEODIR_ATTACHMENT_TABLE, $image_data );
 			}
-			
+
 			return true;
 		}
 
@@ -1631,7 +1633,7 @@ class GeoDir_Multilingual_WPML {
 	}
 
 	public static function posts_where( $where, $query ) {
-		global $geodir_post_type;
+		global $sitepress, $wpml_term_translations, $geodir_post_type;
 
 		if ( ! empty( $_REQUEST['stype'] ) && geodir_is_page( 'search' ) ) {
 			$post_type = sanitize_text_field( $_REQUEST['stype'] );
@@ -1641,6 +1643,13 @@ class GeoDir_Multilingual_WPML {
 
 		if ( $post_type ) {
 			$where = self::filter_single_type_where( $where, $post_type );
+
+			// Translated tax query.
+			if ( geodir_is_page( 'archive' ) && GeoDir_Query::is_gd_main_query( $query ) ) {
+				$wpml_display_as_translated_tax_query = new WPML_Display_As_Translated_Tax_Query( $sitepress, $wpml_term_translations );
+
+				$where = $wpml_display_as_translated_tax_query->posts_where_filter( $where, $query );
+			}
 		}
 
 		return $where;
@@ -1655,8 +1664,19 @@ class GeoDir_Multilingual_WPML {
 	}
 
 	public static function widget_posts_where( $where, $post_type ) {
+		global $sitepress, $gd_query_args_widgets;
+
 		if ( $post_type ) {
 			$where = self::filter_single_type_where( $where, $post_type );
+
+			if ( ! empty( $gd_query_args_widgets['tax_query'] ) && self::get_default_language() !== self::get_current_language() && $sitepress->is_display_as_translated_post_type( $post_type ) ) {
+				$terms = self::find_terms( $where );
+
+				if ( ! empty( $terms ) ) {
+					$fallback_terms = self::get_fallback_terms( $terms );
+					$where = self::add_fallback_terms_to_where_clause( $where, $fallback_terms, $gd_query_args_widgets );
+				}
+			}
 		}
 
 		return $where;
@@ -2956,5 +2976,117 @@ class GeoDir_Multilingual_WPML {
 		$check = $key && in_array( $key, array( 'geodirectory_contact', 'geodirectory_claim' ) ) ? true : false;
 
 		return apply_filters( 'wpml_is_geodirectory_ninja_form', $check, $key, $form_data );
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @param string $where
+	 *
+	 * @return array
+	 */
+	public static function find_terms( $where ) {
+		$term_regex = '/term_taxonomy_id\s+(IN|in)\s*\(([^\)]+)\)/';
+
+		$terms = array();
+		if ( preg_match_all( $term_regex, $where, $matches ) ) {
+			foreach ( $matches[2] as $terms_string ) {
+				$terms_parts = explode( ',', $terms_string );
+				$terms = array_unique( array_merge( $terms, $terms_parts ) );
+			}
+		}
+
+		return $terms;
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @param array $terms
+	 *
+	 * @return array
+	 */
+	public static function get_fallback_terms( $terms ) {
+		global $wpml_term_translations;
+
+		$default_language = self::get_default_language();
+
+		$fallback_terms   = array();
+		foreach ( $terms as $term ) {
+			$translations = $wpml_term_translations->get_element_translations( (int) $term );
+			if ( isset( $translations[ $default_language ] ) && ! in_array( $translations[ $default_language ], $fallback_terms ) ) {
+				$fallback_terms[ $term ] = $translations[ $default_language ];
+			}
+		}
+
+		return $fallback_terms;
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @param string   $where
+	 * @param array    $fallback_terms
+	 * @param array    $query_args
+	 *
+	 * @return string
+	 */
+	public static function add_fallback_terms_to_where_clause( $where, $fallback_terms, $query_args ) {
+		$term_regex = '/term_taxonomy_id\s+(IN|in)\s*\(([^\)]+)\)/';
+
+		if ( preg_match_all( $term_regex, $where, $matches ) ) {
+			foreach ( $matches[2] as $index => $terms_string ) {
+				$new_terms_string = self::add_fallback_terms( $terms_string, $fallback_terms, $query_args );
+				$original_block   = $matches[0][ $index ];
+				$new_block        = str_replace( '(' . $terms_string . ')', '(' . $new_terms_string . ')', $original_block );
+				$where            = str_replace( $original_block, $new_block, $where );
+			}
+		}
+
+		return $where;
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @param string   $terms_string
+	 * @param array    $fallback_terms
+	 * @param WP_Query $query_args
+	 *
+	 * @return string
+	 */
+	public static function add_fallback_terms( $terms_string, $fallback_terms, $query_args ) {
+		$mergeFallbackTerms = function ( $term ) use ( $fallback_terms ) {
+			return isset( $fallback_terms[ $term ] ) ? [ $term, $fallback_terms[ $term ] ] : $term;
+		};
+
+		$taxonomy = $query_args['tax_query'][0]['taxonomy'];
+
+		if ( $taxonomy && self::include_term_children( $query_args ) ) {
+			$mergeChildren = function ( $term ) use ( $taxonomy ) {
+				return [ $term, get_term_children( $term, $taxonomy ) ];
+			};
+		} else {
+			$mergeChildren = \WPML\FP\Fns::identity();
+		}
+
+		return wpml_collect( explode( ',', $terms_string ) )
+			->map( $mergeFallbackTerms )
+			->flatten()
+			->map( $mergeChildren )
+			->flatten()
+			->unique()
+			->implode( ',' );
+	}
+
+	/**
+	 * @since 2.2
+	 *
+	 * @param WP_Query $query_args
+	 *
+	 * @return bool
+	 */
+	public static function include_term_children( $query_args ) {
+		return (bool) \WPML\FP\Obj::path( [ 'tax_query', 'queries', 0, 'include_children' ], $query_args );
 	}
 }

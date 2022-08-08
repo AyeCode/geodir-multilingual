@@ -23,6 +23,7 @@ class GeoDir_Multilingual_WPML_Config {
 
 		add_filter( 'wpml_tm_translation_job_data', array( __CLASS__, 'wpml_tm_translation_job_data' ), 20, 2 );
 		add_filter( 'wpml_pre_save_pro_translation', array( __CLASS__, 'wpml_pre_save_pro_translation' ), 20, 2 );
+		add_action( 'wpml_pro_translation_completed', array( __CLASS__, 'wpml_pro_translation_completed' ), 20, 3 );
 		add_action( 'geodir_post_type_saved', array( __CLASS__, 'on_post_type_saved' ), 20, 3 );
 	}
 
@@ -112,8 +113,13 @@ class GeoDir_Multilingual_WPML_Config {
 		foreach ( $post_types as $post_type => $data ) {
 			$child_node             = $dom->createElement( 'custom-type', sanitize_key( $post_type ) );
 			$child_node             = $parent_node->appendChild( $child_node );
+			// translate
 			$child_node_attr        = $dom->createAttribute( 'translate' );
 			$child_node_attr->value = '1';
+			$child_node->appendChild( $child_node_attr );
+			// automatic
+			$child_node_attr        = $dom->createAttribute( 'automatic' );
+			$child_node_attr->value = '0';
 			$child_node->appendChild( $child_node_attr );
 		}
 	}
@@ -185,8 +191,10 @@ class GeoDir_Multilingual_WPML_Config {
 					continue;
 				}
 
-				if ( in_array( $name, array( 'post_category', 'post_tags', 'business_hours', 'claimed', 'event_dates', 'recurring', 'expire_date', 'package_id', 'franchise', 'franchise_fields', 'franchise_of' ) ) || in_array( $field->field_type, array( 'checkbox', 'radio', 'select', 'multiselect' ) ) ) {
+				if ( in_array( $name, array( 'post_category', 'post_tags', 'business_hours', 'claimed', 'event_dates', 'recurring', 'expire_date', 'package_id', 'franchise', 'franchise_fields', 'franchise_of' ) ) || in_array( $field->field_type, array( 'checkbox', 'radio', 'select', 'multiselect', 'datepicker', 'time' ) ) || in_array( strtolower( $field->data_type ), array( 'int', 'float', 'decimal' ) ) ) {
 					$value = 'copy';
+				} else if ( in_array( $field->field_type, array( 'phone', 'email', 'url' ) ) ) {
+					$value = 'copy-once';
 				} else if ( in_array( $field->field_type, array( 'images', 'file' ) ) ) {
 					$value = 'ignore';
 				} else {
@@ -342,7 +350,7 @@ class GeoDir_Multilingual_WPML_Config {
 	}
 
 	public static function wpml_pre_save_pro_translation( $postarr, $job ) {
-		global $iclTranslationManagement;
+		global $wpdb, $iclTranslationManagement;
 
 		if ( ! geodir_is_gd_post_type( $postarr['post_type'] ) ) {
 			return $postarr;
@@ -379,25 +387,69 @@ class GeoDir_Multilingual_WPML_Config {
 
 		// change post_category to an array()
 		if ( ! empty( $postarr['post_category'] ) ) {
-			if ( empty( $postarr['post_category'] ) ) {
-				$postarr['tax_input'][$postarr['post_type'].'category'] = array();
-			} else {
-				$postarr['tax_input'][$postarr['post_type'].'category'] = array_map( 'trim', explode( ',', $postarr['post_category'] ) );
+			$post_category = array();
+			$_post_category = array_filter( array_map( 'trim', explode( ',', strip_tags( $postarr['post_category'] ) ) ) );
+
+			if ( ! empty( $_post_category ) ) {
+				foreach ( $_post_category as $term_id ) {
+					$_term_id = apply_filters( 'translate_object_id', absint( $term_id ), $postarr['post_type'] . 'category', false, $job->language_code );
+
+					$post_category[] = ! empty( $_term_id ) ? (int) $_term_id : (int) $term_id;
+				}
 			}
-			unset($postarr['post_category']);
+
+			$postarr['tax_input'][$postarr['post_type'] . 'category'] = $post_category;
+			$postarr['default_category'] = (int) apply_filters( 'translate_object_id', absint( $original_gd_post->default_category ), $postarr['post_type'] . 'category', false, $job->language_code );
+
+			unset( $postarr['post_category'] );
 		}
 
 		// change post_tags to an array()
 		if ( ! empty( $postarr['post_tags'] ) ) {
-			if ( empty( $postarr['post_tags'] ) ) {
-				$postarr['tax_input'][$postarr['post_type'].'_tags'] = array();
-			} else {
-				$postarr['tax_input'][$postarr['post_type'].'_tags'] = array_map( 'trim', explode( ',', $postarr['post_tags'] ) );
+			$taxonomy = $postarr['post_type'].'_tags';
+			$terms = get_the_terms( (int) $original_post->ID, $taxonomy );
+
+			if ( $terms ) {
+				foreach ( $terms as $term ) {
+					$tr_id = apply_filters( 'translate_object_id', $term->term_id, $taxonomy, false, $job->language_code );
+
+					if ( ! is_null( $tr_id ) ) {
+						$translated_term = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->terms} t JOIN {$wpdb->term_taxonomy} x ON x.term_id = t.term_id WHERE t.term_id = %d AND x.taxonomy = %s", $tr_id, $taxonomy ) );
+
+						$term_names[] = $translated_term->name;
+					}
+				}
 			}
-			unset($postarr['post_tags']);
+
+			$post_tags = ! empty( $term_names ) ? $term_names : array_filter( array_map( 'trim', explode( ',', strip_tags( $postarr['post_tags'] ) ) ) );
+
+			$postarr['tax_input'][ $taxonomy ] = $post_tags;
+
+			unset( $postarr['post_tags'] );
+		}
+
+		if ( ! empty( $original_gd_post->featured_image ) ) {
+			$postarr['featured_image'] = $original_gd_post->featured_image;
 		}
 
 		return $postarr;
+	}
+
+	public static function wpml_pro_translation_completed( $new_post_id, $fields, $job ) {
+		global $wpdb, $iclTranslationManagement;
+
+		if ( ! geodir_is_gd_post_type( get_post_type( $new_post_id ) ) ) {
+			return;
+		}
+
+		$element_type_prefix = $iclTranslationManagement->get_element_type_prefix_from_job( $job );
+		$original_post = $iclTranslationManagement->get_post( $job->original_doc_id, $element_type_prefix );
+
+		// Duplicate post images
+		GeoDir_Multilingual_WPML::duplicate_post_images( $original_post->ID, $new_post_id, $job->language_code, true );
+
+		// Duplicate post files
+		GeoDir_Multilingual_WPML::duplicate_post_files( $original_post->ID, $new_post_id, $job->language_code );
 	}
 
 	public static function decode_field_data( $data, $format ) {
