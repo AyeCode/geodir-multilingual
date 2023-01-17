@@ -38,6 +38,9 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 
 == Changelog ==
 
+= 2.2.1 =
+* Changes for AUI Bootstrap 5 compatibility - ADDED
+
 = 2.2 =
 * Review rating not properly duplicated on location-less post - FIXED
 * Sometime featured image missing for auto translated post - FIXED
