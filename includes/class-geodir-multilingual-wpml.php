@@ -1265,7 +1265,7 @@ class GeoDir_Multilingual_WPML {
 
 								if ( !empty( $duplicates ) && isset( $duplicates[$lang_code] ) ) {
 									$duplicates_text = ' <span class="geodir-translation-status">' . __( '(duplicate)', 'geodir-multilingual' ) . '</span>';
-									$duplicates_text .= '<a href="javascript:void(0)" title="' . esc_attr__( 'Disable the WPML duplication translation to translate independently.', 'geodir-multilingual' ) . '" class="geodir-tr-independent btn btn-sm btn-secondary mt-2 clear-both" data-post-id="' . absint( $duplicates[ $lang_code ] ) . '" data-nonce="' . esc_attr( wp_create_nonce( 'geodir_check_duplicates' ) ) . '"><i style="display:none" class="fas fa-sync fa-spin ' . ( $aui_bs5 ? 'mr-1' : 'me-1' ) . '"></i>' . __( 'Translate Independently', 'geodir-multilingual' ) . '</a>';
+									$duplicates_text .= '<a href="javascript:void(0)" title="' . esc_attr__( 'Disable the WPML duplication translation to translate independently.', 'geodir-multilingual' ) . '" class="geodir-tr-independent btn btn-sm btn-secondary mt-2 clear-both" data-post-id="' . absint( $duplicates[ $lang_code ] ) . '" data-nonce="' . esc_attr( wp_create_nonce( 'geodir_check_duplicates' ) ) . '"><i style="display:none" class="fas fa-sync fa-spin ' . ( $aui_bs5 ? 'me-1' : 'mr-1' ) . '"></i>' . __( 'Translate Independently', 'geodir-multilingual' ) . '</a>';
 								}
 							} else {
 								$needs_translation = true;
@@ -1283,7 +1283,7 @@ class GeoDir_Multilingual_WPML {
 						}
 
 						if ( $needs_translation ) {
-							$wpml_content .= '<tr><td></td><td class="text-center"><button data-nonce="' . esc_attr( wp_create_nonce( 'geodir-duplicate-post' ) ) . '" data-post-id="' . $post_id . '" id="gd_make_duplicates" class="btn btn-sm btn-primary"><i style="display:none" class="fas fa-sync fa-spin ' . ( $aui_bs5 ? 'mr-1' : 'me-1' ) . '" aria-hidden="true"></i>' . __( 'Duplicate', 'geodir-multilingual' ) . '</button></td></tr>';
+							$wpml_content .= '<tr><td></td><td class="text-center"><button data-nonce="' . esc_attr( wp_create_nonce( 'geodir-duplicate-post' ) ) . '" data-post-id="' . $post_id . '" id="gd_make_duplicates" class="btn btn-sm btn-primary"><i style="display:none" class="fas fa-sync fa-spin ' . ( $aui_bs5 ? 'me-1' : 'mr-1' ) . '" aria-hidden="true"></i>' . __( 'Duplicate', 'geodir-multilingual' ) . '</button></td></tr>';
 						}
 
 						$wpml_content .= '</tbody></table>';
@@ -1312,7 +1312,7 @@ class GeoDir_Multilingual_WPML {
 						
 						$content .= '<div class="geodir-company_info gd-detail-duplicate">';
 						$content .= wp_sprintf( __( 'This post is a duplicate of %s and it is translated via WPML duplicate translation.', 'geodir-multilingual' ), '<a href="' . esc_url( get_permalink( $original_post_id ) ) . '" target="_blank">' . get_the_title( $original_post_id ) . '</a>' );
-						$content .= '<a href="javascript:void(0)" title="' . esc_attr__( 'Disable the WPML duplication translation to translate independently.', 'geodir-multilingual' ) . '" class="geodir-tr-independent btn btn-secondary btn-sm clear-both mt-3" data-post-id="' . absint( $post_id ) . '" data-nonce="' . esc_attr( wp_create_nonce( 'geodir_check_duplicates' ) ) . '" data-reload=1><i style="display:none" class="fas fa-sync fa-spin ' . ( $aui_bs5 ? 'mr-1' : 'me-1' ) . '"></i>' . __( 'Translate Independently', 'geodir-multilingual' ) . '</a>';
+						$content .= '<a href="javascript:void(0)" title="' . esc_attr__( 'Disable the WPML duplication translation to translate independently.', 'geodir-multilingual' ) . '" class="geodir-tr-independent btn btn-secondary btn-sm clear-both mt-3" data-post-id="' . absint( $post_id ) . '" data-nonce="' . esc_attr( wp_create_nonce( 'geodir_check_duplicates' ) ) . '" data-reload=1><i style="display:none" class="fas fa-sync fa-spin ' . ( $aui_bs5 ? 'me-1' : 'mr-1' ) . '"></i>' . __( 'Translate Independently', 'geodir-multilingual' ) . '</a>';
 						$content .= '</div>';
 					}
 				}
