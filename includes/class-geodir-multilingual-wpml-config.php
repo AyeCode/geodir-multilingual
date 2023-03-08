@@ -228,7 +228,7 @@ class GeoDir_Multilingual_WPML_Config {
 					if ( $name == 'post_category' ) {
 						$_fields[ 'field-default_category' ] = $contents;
 					} else if ( $name == 'street' ) {
-						$address_fields = array( 'city', 'region', 'country', 'neighbourhood', 'zip', 'latitude', 'longitude', 'mapview', 'mapzoom' );
+						$address_fields = array( 'street2', 'city', 'region', 'country', 'neighbourhood', 'zip', 'latitude', 'longitude', 'mapview', 'mapzoom' );
 
 						foreach ( $address_fields as $address_field ) {
 							$value = 'translate';
