@@ -11,6 +11,7 @@
     <custom-field action="copy">field-default_category</custom-field>
     <custom-field action="copy">field-post_tags</custom-field>
     <custom-field action="translate">field-street</custom-field>
+    <custom-field action="translate">field-street2</custom-field>
     <custom-field action="translate">field-city</custom-field>
     <custom-field action="translate">field-region</custom-field>
     <custom-field action="copy">field-country</custom-field>
