@@ -3,9 +3,9 @@ Contributors: stiofansisland, paoltaia, ayecode
 Donate link: https://www.ko-fi.com/stiofan
 Tags: geodirectory, geodirectory multilingual, localization, language, multilingual, translation, WPML
 Requires at least: 4.9
-Tested up to: 6.1
+Tested up to: 6.2
 Requires PHP: 5.6
-Stable tag: 2.2
+Stable tag: 2.3
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -38,7 +38,7 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 
 == Changelog ==
 
-= 2.2.1 =
+= 2.3 - 2023-03-16 =
 * Changes for AUI Bootstrap 5 compatibility - ADDED
 * Setup street2 field for auto translation - CHANGED
 
