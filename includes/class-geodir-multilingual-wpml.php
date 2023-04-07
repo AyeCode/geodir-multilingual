@@ -2108,7 +2108,7 @@ class GeoDir_Multilingual_WPML {
 
 					break;
 				case 'address':
-					$address_fields = array( 'street', 'country', 'region', 'city', 'neighbourhood', 'zip', 'latitude', 'longitude', 'mapview', 'mapzoom' );
+					$address_fields = array( 'street', 'street2', 'country', 'region', 'city', 'neighbourhood', 'zip', 'latitude', 'longitude', 'mapview', 'mapzoom' );
 
 					foreach ( $address_fields as $key ) {
 						$fields[ $key ] = array(

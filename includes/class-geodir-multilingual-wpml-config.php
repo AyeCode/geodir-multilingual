@@ -311,7 +311,7 @@ class GeoDir_Multilingual_WPML_Config {
 						$contents['data'] = $tp->encode_field_data( $gd_post->default_category, 'base64' );
 						$package['contents'][ 'field-default_category' ] = $contents;
 					} else if ( $name == 'street' ) {
-						$address_fields = array( 'city', 'region', 'country', 'neighbourhood', 'zip', 'latitude', 'longitude', 'mapview', 'mapzoom' );
+						$address_fields = array( 'street2', 'city', 'region', 'country', 'neighbourhood', 'zip', 'latitude', 'longitude', 'mapview', 'mapzoom' );
 
 						foreach ( $address_fields as $address_field ) {
 							$value = isset( $gd_post->{$address_field} ) ? $gd_post->{$address_field} : '';

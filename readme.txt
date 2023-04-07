@@ -38,6 +38,9 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 
 == Changelog ==
 
+= 2.3.1 =
+* Allow street2 field translation with WPML translation editor - CHANGED
+
 = 2.3 - 2023-03-16 =
 * Changes for AUI Bootstrap 5 compatibility - ADDED
 * Setup street2 field for auto translation - CHANGED
