@@ -1,9 +1,9 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: GeoDirectory Multilingual 2.3\n"
+"Project-Id-Version: GeoDirectory Multilingual 2.3.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-03-15 18:39+0530\n"
-"PO-Revision-Date: 2023-03-15 18:39+0530\n"
+"POT-Creation-Date: 2023-04-19 16:30+0530\n"
+"PO-Revision-Date: 2023-04-19 16:30+0530\n"
 "Last-Translator: \n"
 "Language-Team: AyeCode Ltd <contact@ayecode.io>\n"
 "Language: en_US\n"
@@ -118,13 +118,13 @@ msgstr ""
 msgid "You are not allowed to manage translation for this listing."
 msgstr ""
 
-#: includes/class-geodir-multilingual.php:130
+#: includes/class-geodir-multilingual.php:135
 msgid ""
 "GeoDirectory plugin is required for the GeoDirectory Multilingual plugin to "
 "work properly."
 msgstr ""
 
-#: includes/class-geodir-multilingual.php:142
+#: includes/class-geodir-multilingual.php:147
 msgid ""
 "Your version of PHP is below the minimum PHP version required by "
 "GeoDirectory Multilingual. Please contact your host and request that your "
