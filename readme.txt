@@ -38,6 +38,9 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 
 == Changelog ==
 
+= 2.3.2 =
+* Changes for add listing pretty permalinks - CHANGED
+
 = 2.3.1 2023-04-19 =
 * Allow street2 field translation with WPML translation editor - CHANGED
 
