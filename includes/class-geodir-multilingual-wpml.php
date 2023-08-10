@@ -107,6 +107,7 @@ class GeoDir_Multilingual_WPML {
 		add_action( 'geodir_location_permalinks_post_rewrite_rule', array( __CLASS__, 'location_permalinks_post_rewrite_rule' ), 10, 7 );
 		add_action( 'geodir_location_permalinks_cat_rewrite_rule', array( __CLASS__, 'location_permalinks_cat_rewrite_rule' ), 10, 8 );
 		add_action( 'geodir_location_permalinks_tag_rewrite_rule', array( __CLASS__, 'location_permalinks_tag_rewrite_rule' ), 10, 8 );
+		add_action( 'geodir_get_add_listing_rewrite_rules', array( __CLASS__, 'get_add_listing_rewrite_rules' ), 10, 1 );
 
 		// Disable "Use WPML's Translation Editor" for GD CPTs
 		add_filter( 'get_post_metadata', array( __CLASS__, 'get_post_metadata' ), 100, 4 );
@@ -329,7 +330,7 @@ class GeoDir_Multilingual_WPML {
 	public static function icl_ls_languages( $languages ) {
 		global $wp_query, $sitepress, $wpml_post_translations, $wpml_term_translations;
 
-		if ( geodir_is_page( 'search' ) || geodir_is_page( 'post_type' ) || geodir_is_page( 'location' ) ) {
+		if ( geodir_is_page( 'search' ) || geodir_is_page( 'post_type' ) || geodir_is_page( 'location' ) || geodir_is_page( 'add-listing' ) ) {
 			$current_language = $sitepress->get_current_language();
 			$default_language = $sitepress->get_default_language();
 
@@ -365,20 +366,28 @@ class GeoDir_Multilingual_WPML {
 					}
 				}
 			} else {
+				$post_type = ! empty( $_REQUEST['stype'] ) ? sanitize_text_field( $_REQUEST['stype'] ) : '';
+				$categories = ! empty( $_REQUEST['spost_category'] ) ? $_REQUEST['spost_category'] : NULL;
+				if ( is_array( $categories ) ) {
+					$categories = array_values( $categories );
+				}
+
+				$is_add_listing = false;
 				$is_search = false;
 				$is_location = false;
-				if ( geodir_is_page( 'search' ) ) {
+				$post_id = 0;
+
+				if ( geodir_is_page( 'add-listing' ) ) {
+					$is_add_listing = true;
+					$post_type = ! empty( $_REQUEST['listing_type'] ) ? sanitize_text_field( $_REQUEST['listing_type'] ) : '';
+					$post_id = ! empty( $_REQUEST['pid'] ) ? absint( $_REQUEST['pid'] ) : 0;
+					$default_page_id = geodir_get_page_id( 'add', $post_type, false );
+				} else if ( geodir_is_page( 'search' ) ) {
 					$is_search = true;
 					$default_page_id = geodir_get_page_id( 'search', '', false );
 				} else {
 					$is_location = true;
 					$default_page_id = geodir_get_page_id( 'location', '', false );
-				}
-
-				$post_type = ! empty( $_REQUEST['stype'] ) ? sanitize_text_field( $_REQUEST['stype'] ) : '';
-				$categories = ! empty( $_REQUEST['spost_category'] ) ? $_REQUEST['spost_category'] : NULL;
-				if ( is_array( $categories ) ) {
-					$categories = array_values( $categories );
 				}
 
 				$w_active_languages = apply_filters( 'wpml_active_languages_access', $sitepress->get_active_languages(), array( 'action' => 'read' ) );
@@ -396,7 +405,9 @@ class GeoDir_Multilingual_WPML {
 
 					$sitepress->switch_lang( $lang['code'] );
 
-					if ( $is_search ) {
+					if ( $is_add_listing ) {
+						$page_id = absint( geodir_add_listing_page_id( $post_type ) );
+					} else if ( $is_search ) {
 						$page_id = absint( geodir_search_page_id() );
 					} else {
 						$page_id = absint( geodir_location_page_id() );
@@ -415,7 +426,10 @@ class GeoDir_Multilingual_WPML {
 					if ( $default_language != $lang['code'] && $default_page_id == $page_id ) {
 						$skip_lang = true;
 					} else {
-						if ( $is_location ) {
+						if ( $is_add_listing ) {
+							$post_id = $post_id > 0 ? self::get_object_id( $post_id, $post_type, true ) : 0;
+							$page_url = geodir_add_listing_page_url( $post_type, $post_id );
+						} else if ( $is_location ) {
 							$page_url = geodir_get_location_link( 'current' );
 						} else {
 							$page_url = get_permalink( absint( $page_id ) );
@@ -2598,6 +2612,48 @@ class GeoDir_Multilingual_WPML {
 				}
 			}
 		}
+	}
+
+	public static function get_add_listing_rewrite_rules( $rules ) {
+		global $sitepress, $geodirectory;
+
+		$post_types = geodir_get_posttypes( 'array' );
+
+		$w_active_languages = apply_filters( 'wpml_active_languages_access', $sitepress->get_active_languages(), array( 'action' => 'read' ) );
+
+		if ( empty( $w_active_languages ) ) {
+			return $rules;
+		}
+
+		foreach ( $w_active_languages as $k => $lang ) {
+			$backup_lang = $sitepress->get_current_language();
+
+			$sitepress->switch_lang( $lang['code'] );
+
+			$page_slug = $geodirectory->permalinks->add_listing_slug();
+
+			foreach ( $post_types as $post_type => $cpt ) {
+				$cpt_slug = geodir_cpt_permalink_rewrite_slug( $post_type );
+
+				if ( empty( $cpt_slug ) ) {
+					$cpt_slug = $cpt['rewrite']['slug'];
+				}
+
+				$rules[ '^' . $page_slug . '/' . $cpt_slug . '/?$' ] = 'index.php?pagename=' . $page_slug . '&listing_type=' . $post_type;
+				$rules[ '^' . $page_slug . '/' . $cpt_slug . '/?([0-9]{1,})/?$' ] = 'index.php?pagename=' . $page_slug . '&listing_type=' . $post_type . '&pid=$matches[1]';
+
+				$cpt_page_slug = $geodirectory->permalinks->add_listing_slug( $post_type );
+
+				if ( $cpt_page_slug != $cpt_slug ) {
+					$rules[ '^' . $cpt_page_slug . '/' . $cpt_slug . '/?$' ] = 'index.php?pagename=' . $cpt_page_slug . '&listing_type=' . $post_type;
+					$rules[ '^' . $cpt_page_slug . '/' . $cpt_slug . '/?([0-9]{1,})/?$' ] = 'index.php?pagename=' . $cpt_page_slug . '&listing_type=' . $post_type . '&pid=$matches[1]';
+				}
+			}
+
+			$sitepress->switch_lang( $backup_lang );
+		}
+
+		return $rules; 
 	}
 
 	public static function permalinks_author_rewrite_rule( $post_type, $post_type_arr, $geodir_permalinks, $cpt_slug, $favs_slug, $favs_slug_arr ) {
