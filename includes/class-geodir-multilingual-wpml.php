@@ -117,6 +117,8 @@ class GeoDir_Multilingual_WPML {
 		add_action( 'geodir_import_post_before',  array( __CLASS__, 'import_post_before' ), 10, 1 );
 		add_action( 'geodir_import_post_after',  array( __CLASS__, 'import_post_after' ), 10, 2 );
 		add_filter( 'geodir_save_post_temp_data',  array( __CLASS__, 'save_post_temp_data' ), 1, 3 );
+		
+		add_action( 'template_redirect',  array( __CLASS__, 'on_template_redirect' ), 99 );
 	}
 
 	public static function get_default_language() {
@@ -3144,5 +3146,41 @@ class GeoDir_Multilingual_WPML {
 	 */
 	public static function include_term_children( $query_args ) {
 		return (bool) \WPML\FP\Obj::path( [ 'tax_query', 'queries', 0, 'include_children' ], $query_args );
+	}
+
+	/**
+	 * @since 2.3.3
+	 *
+	 * @return bool
+	 */
+	public static function remove_filter( $hook_name = '', $class_name = '', $method_name = '', $priority = 0 ) {
+		global $wp_filter;
+
+		if ( ! isset( $wp_filter[ $hook_name ][ $priority ] ) || ! is_array( $wp_filter[ $hook_name ][ $priority ] ) ) {
+			return false;
+		}
+
+		foreach ( (array) $wp_filter[ $hook_name ][ $priority ] as $unique_id => $filter_array ) {
+			if ( isset( $filter_array['function'] ) && is_array( $filter_array['function'] ) ) {
+				if ( is_object( $filter_array['function'][0] ) && get_class( $filter_array['function'][0] ) && get_class( $filter_array['function'][0] ) === $class_name && $filter_array['function'][1] === $method_name ) {
+					if ( is_a( $wp_filter[ $hook_name ], 'WP_Hook' ) ) {
+						unset( $wp_filter[ $hook_name ]->callbacks[ $priority ][ $unique_id ] );
+					} else {
+						unset( $wp_filter[ $hook_name ][ $priority ][ $unique_id ] );
+					}
+				}
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * @since 2.3.3
+	 */
+	public static function on_template_redirect() {
+		if ( class_exists( 'WPML_Fix_Links_In_Display_As_Translated_Content' ) && geodir_is_geodir_page() ) {
+			self::remove_filter( 'the_content', 'WPML_Fix_Links_In_Display_As_Translated_Content', 'fix_fallback_links', 99 );
+		}
 	}
 }
