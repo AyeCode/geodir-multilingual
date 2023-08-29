@@ -38,6 +38,9 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 
 == Changelog ==
 
+= 2.3.3 =
+* Fallback links translation breaks add listing links - FIXED
+
 = 2.3.2 - 2023-08-10 =
 * Changes for add listing pretty permalinks - CHANGED
 
