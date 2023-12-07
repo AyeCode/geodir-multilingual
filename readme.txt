@@ -38,6 +38,10 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 
 == Changelog ==
 
+= 2.3.4 - TBD =
+* Link frontend edit url to main post for duplicate translation post - CHANGED
+* Show add listing preview in respective language - FIXED
+
 = 2.3.3 - 2023-08-31 =
 * Fallback links translation breaks add listing links - FIXED
 
