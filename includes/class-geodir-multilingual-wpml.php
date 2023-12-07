@@ -20,6 +20,12 @@ class GeoDir_Multilingual_WPML {
 	public static function init() {
 		global $sitepress;
 
+		// WordPress
+		if ( ! is_admin() ) {
+			add_action( 'wp_loaded', array( __CLASS__, 'wp_loaded' ), 11 );
+			add_filter( 'preview_post_link', array( __CLASS__, 'preview_post_link' ), 999, 2 );
+		}
+
 		add_filter( 'wpml_current_language', array( __CLASS__, 'wpml_current_language' ), 999, 1 );
 		add_filter( 'icl_ls_languages', array( __CLASS__, 'icl_ls_languages' ), 11, 1 );
 		add_filter( 'icl_lang_sel_copy_parameters', array( __CLASS__, 'icl_lang_sel_copy_parameters' ), 11, 1 );
@@ -81,6 +87,7 @@ class GeoDir_Multilingual_WPML {
 		add_action( 'icl_post_languages_options_after', array( __CLASS__, 'setup_copy_from_original' ), 10, 1 );
 		add_action( 'geodir_location_get_terms_set_globals', array( __CLASS__, 'location_get_terms_set_globals' ), 10, 5 );
 		add_action( 'geodir_location_get_terms_reset_globals', array( __CLASS__, 'location_get_terms_reset_globals' ), 10, 5 );
+		add_filter( 'geodir_add_listing_page_url', array( __CLASS__, 'add_listing_page_url' ), 1, 3 );
 
 		add_action( 'geodir_bp_listings_count_where', array( __CLASS__, 'geodir_bp_listings_count_where' ), 10, 2 );
 		add_action( 'geodir_bp_listings_count_join', array( __CLASS__, 'geodir_bp_listings_count_join' ), 10, 2 );
@@ -3182,5 +3189,66 @@ class GeoDir_Multilingual_WPML {
 		if ( class_exists( 'WPML_Fix_Links_In_Display_As_Translated_Content' ) && geodir_is_geodir_page() ) {
 			self::remove_filter( 'the_content', 'WPML_Fix_Links_In_Display_As_Translated_Content', 'fix_fallback_links', 99 );
 		}
+	}
+
+	/**
+	 * @since 2.3.4
+	 */
+	public static function add_listing_page_url( $page_url, $post_type, $post_id ) {
+		global $sitepress;
+
+		if ( empty( $post_id ) ) {
+			return $page_url;
+		}
+
+		$main_post_id = $sitepress->get_original_element_id( $post_id, 'post_' . $post_type, false, true );
+
+		if ( ! empty( $main_post_id ) && $post_id != $main_post_id ) {
+			$duplicates = $sitepress->get_duplicates( $main_post_id );
+
+			if ( ! empty( $duplicates ) && in_array( $post_id, array_values( $duplicates ) ) ) {
+				if ( get_option( 'permalink_structure' ) != '' ) {
+					$page_url = str_replace( "/" . $post_id . "/", "/" . $main_post_id . "/", $page_url );
+				} else {
+					$page_url = add_query_arg( array( 'pid' => $main_post_id ), $page_url );
+				}
+			}
+		}
+
+		return $page_url;
+	}
+
+	/**
+	 * @since 2.3.4
+	 */
+	public static function wp_loaded() {
+		global $wpml_language_resolution;
+
+		if ( ! empty( $_REQUEST['post_type'] ) && ! empty( $_REQUEST['p'] ) && ! empty( $_REQUEST['preview'] ) && ! empty( $_REQUEST['lang'] ) && get_post_type( (int) $_REQUEST['p'] ) == $_REQUEST['post_type'] && ! is_admin() ) {
+			 $set_lang = sanitize_text_field( $_REQUEST['lang'] );
+			 $current_lang = self::get_current_language();
+
+			if ( $set_lang != 'all' && $set_lang != $current_lang && in_array( $set_lang, $wpml_language_resolution->get_active_language_codes(), true ) ) {
+				self::switch_lang( $set_lang );
+			}
+		}
+	}
+
+	/**
+	 * @since 2.3.4
+	 */
+	public static function preview_post_link( $preview_link, $post ) {
+		if ( ! geodir_is_page( 'add-listing' ) ) {
+			return $preview_link;
+		}
+
+		$default_lang = self::get_default_language();
+		$current_lang = self::get_current_language();
+
+		if ( $current_lang && $default_lang && $current_lang != $default_lang ) {
+			$preview_link = add_query_arg( array( 'lang' => $current_lang ), $preview_link );
+		}
+
+		return $preview_link;
 	}
 }
