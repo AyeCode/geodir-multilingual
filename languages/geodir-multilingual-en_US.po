@@ -1,9 +1,9 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: GeoDirectory Multilingual 2.3.3\n"
+"Project-Id-Version: GeoDirectory Multilingual 2.3.4\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-08-31 15:46+0530\n"
-"PO-Revision-Date: 2023-08-31 15:46+0530\n"
+"POT-Creation-Date: 2023-12-07 17:21+0530\n"
+"PO-Revision-Date: 2023-12-07 17:21+0530\n"
 "Last-Translator: \n"
 "Language-Team: AyeCode Ltd <contact@ayecode.io>\n"
 "Language: en_US\n"
@@ -50,71 +50,71 @@ msgstr ""
 msgid "This will update WPML configuration(wpml-config.xml) file."
 msgstr ""
 
-#: includes/class-geodir-multilingual-wpml.php:1163
+#: includes/class-geodir-multilingual-wpml.php:1170
 msgid "Translate Listing"
 msgstr ""
 
-#: includes/class-geodir-multilingual-wpml.php:1165
-#: includes/class-geodir-multilingual-wpml.php:1271
+#: includes/class-geodir-multilingual-wpml.php:1172
+#: includes/class-geodir-multilingual-wpml.php:1278
 msgid "Language"
 msgstr ""
 
-#: includes/class-geodir-multilingual-wpml.php:1165
-#: includes/class-geodir-multilingual-wpml.php:1271
+#: includes/class-geodir-multilingual-wpml.php:1172
+#: includes/class-geodir-multilingual-wpml.php:1278
 msgid "Translate"
 msgstr ""
 
-#: includes/class-geodir-multilingual-wpml.php:1177
-#: includes/class-geodir-multilingual-wpml.php:1283
+#: includes/class-geodir-multilingual-wpml.php:1184
+#: includes/class-geodir-multilingual-wpml.php:1290
 msgid "(duplicate)"
 msgstr ""
 
-#: includes/class-geodir-multilingual-wpml.php:1178
-#: includes/class-geodir-multilingual-wpml.php:1225
-#: includes/class-geodir-multilingual-wpml.php:1284
-#: includes/class-geodir-multilingual-wpml.php:1331
+#: includes/class-geodir-multilingual-wpml.php:1185
+#: includes/class-geodir-multilingual-wpml.php:1232
+#: includes/class-geodir-multilingual-wpml.php:1291
+#: includes/class-geodir-multilingual-wpml.php:1338
 msgid "Disable the WPML duplication translation to translate independently."
 msgstr ""
 
-#: includes/class-geodir-multilingual-wpml.php:1178
-#: includes/class-geodir-multilingual-wpml.php:1225
-#: includes/class-geodir-multilingual-wpml.php:1284
-#: includes/class-geodir-multilingual-wpml.php:1331
+#: includes/class-geodir-multilingual-wpml.php:1185
+#: includes/class-geodir-multilingual-wpml.php:1232
+#: includes/class-geodir-multilingual-wpml.php:1291
+#: includes/class-geodir-multilingual-wpml.php:1338
 msgid "Translate Independently"
-msgstr ""
-
-#: includes/class-geodir-multilingual-wpml.php:1189
-#: includes/class-geodir-multilingual-wpml.php:1295
-msgid "Create duplicate"
 msgstr ""
 
 #: includes/class-geodir-multilingual-wpml.php:1196
 #: includes/class-geodir-multilingual-wpml.php:1302
+msgid "Create duplicate"
+msgstr ""
+
+#: includes/class-geodir-multilingual-wpml.php:1203
+#: includes/class-geodir-multilingual-wpml.php:1309
 msgid "Duplicate"
 msgstr ""
 
-#: includes/class-geodir-multilingual-wpml.php:1224
-#: includes/class-geodir-multilingual-wpml.php:1330
+#: includes/class-geodir-multilingual-wpml.php:1231
+#: includes/class-geodir-multilingual-wpml.php:1337
 #, php-format
 msgid ""
 "This post is a duplicate of %s and it is translated via WPML duplicate "
 "translation."
 msgstr ""
 
-#: includes/class-geodir-multilingual-wpml.php:1293
+#: includes/class-geodir-multilingual-wpml.php:1300
 msgid "Translated"
 msgstr ""
 
-#: includes/class-geodir-multilingual-wpml.php:1364
+#: includes/class-geodir-multilingual-wpml.php:1371
 msgid "Translation can be done from original listing only."
 msgstr ""
 
-#: includes/class-geodir-multilingual-wpml.php:1367
+#: includes/class-geodir-multilingual-wpml.php:1374
 msgid "You are not allowed to translate this listing."
 msgstr ""
 
-#: includes/class-geodir-multilingual-wpml.php:1396
-#: includes/class-geodir-multilingual-wpml.php:1399
+#: includes/class-geodir-multilingual-wpml.php:1403
+#: includes/class-geodir-multilingual-wpml.php:1406
 msgid "You are not allowed to manage translation for this listing."
 msgstr ""
 

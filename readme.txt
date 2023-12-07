@@ -3,9 +3,9 @@ Contributors: stiofansisland, paoltaia, ayecode
 Donate link: https://www.ko-fi.com/stiofan
 Tags: geodirectory, geodirectory multilingual, localization, language, multilingual, translation, WPML
 Requires at least: 4.9
-Tested up to: 6.3
+Tested up to: 6.4
 Requires PHP: 5.6
-Stable tag: 2.3.3
+Stable tag: 2.3.4
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -30,15 +30,15 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 = Minimum Requirements =
 
 * WordPress 4.9 or later
-* GeoDirectory 2.0.0 or later
-* WPML Multilingual CMS 3.4 or later
-* WPML String Translation 2.0 or later
+* GeoDirectory 2.3.0 or later
+* WPML Multilingual CMS 4.0 or later
+* WPML String Translation 3.0 or later
 * WPML Translation Management 2.2 or later
 * WPML Media 2.1 or later
 
 == Changelog ==
 
-= 2.3.4 - TBD =
+= 2.3.4 - 2023-12-07 =
 * Link frontend edit url to main post for duplicate translation post - CHANGED
 * Show add listing preview in respective language - FIXED
 
