@@ -3184,9 +3184,11 @@ class GeoDir_Multilingual_WPML {
 
 	/**
 	 * @since 2.3.3
+	 *
+	 * Or add class wpml-ls-link to link.
 	 */
 	public static function on_template_redirect() {
-		if ( class_exists( 'WPML_Fix_Links_In_Display_As_Translated_Content' ) && geodir_is_geodir_page() ) {
+		if ( class_exists( 'WPML_Fix_Links_In_Display_As_Translated_Content' ) && ( geodir_is_geodir_page() || ( function_exists( 'is_uwp_profile_page' ) && is_uwp_profile_page() ) ) ) {
 			self::remove_filter( 'the_content', 'WPML_Fix_Links_In_Display_As_Translated_Content', 'fix_fallback_links', 99 );
 		}
 	}
