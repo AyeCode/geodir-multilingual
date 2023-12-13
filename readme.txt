@@ -38,6 +38,9 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 
 == Changelog ==
 
+= 2.3.5 - TBD =
+* Fallback links translation breaks add listing links on UWP provide page - FIXED
+
 = 2.3.4 - 2023-12-07 =
 * Link frontend edit url to main post for duplicate translation post - CHANGED
 * Show add listing preview in respective language - FIXED
