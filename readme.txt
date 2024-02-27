@@ -38,6 +38,9 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 
 == Changelog ==
 
+= 2.3.6 - TBD =
+* Admin edit language user setting is not working as expected - FIXED
+
 = 2.3.5 - 2024-02-08 =
 * Fallback links translation breaks add listing links on UWP provide page - FIXED
 

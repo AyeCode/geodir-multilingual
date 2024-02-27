@@ -261,9 +261,16 @@ class GeoDir_Multilingual_WPML {
 	}
 
 	public static function get_page_id( $page_id, $page, $post_type = '', $translated = true ) {
+		global $geodir_wpml_tmp_lang;
+
 		if ( $translated ) {
-			$page_id = self::get_object_id( $page_id, 'page', true );
+			if ( $geodir_wpml_tmp_lang ) {
+				$page_id = self::get_object_id( $page_id, 'page', true, $geodir_wpml_tmp_lang );
+			} else {
+				$page_id = self::get_object_id( $page_id, 'page', true );
+			}
 		}
+
 		return $page_id;
 	}
 
@@ -2624,7 +2631,7 @@ class GeoDir_Multilingual_WPML {
 	}
 
 	public static function get_add_listing_rewrite_rules( $rules ) {
-		global $sitepress, $geodirectory;
+		global $sitepress, $geodirectory, $geodir_wpml_tmp_lang;
 
 		$post_types = geodir_get_posttypes( 'array' );
 
@@ -2635,18 +2642,12 @@ class GeoDir_Multilingual_WPML {
 		}
 
 		foreach ( $w_active_languages as $k => $lang ) {
-			$backup_lang = $sitepress->get_current_language();
-
-			$sitepress->switch_lang( $lang['code'] );
+			$geodir_wpml_tmp_lang = $lang['code'];
 
 			$page_slug = $geodirectory->permalinks->add_listing_slug();
 
 			foreach ( $post_types as $post_type => $cpt ) {
-				$cpt_slug = geodir_cpt_permalink_rewrite_slug( $post_type );
-
-				if ( empty( $cpt_slug ) ) {
-					$cpt_slug = $cpt['rewrite']['slug'];
-				}
+				$cpt_slug = self::get_translated_cpt_slug( $cpt['rewrite']['slug'], $post_type, $lang['code'] );
 
 				$rules[ '^' . $page_slug . '/' . $cpt_slug . '/?$' ] = 'index.php?pagename=' . $page_slug . '&listing_type=' . $post_type;
 				$rules[ '^' . $page_slug . '/' . $cpt_slug . '/?([0-9]{1,})/?$' ] = 'index.php?pagename=' . $page_slug . '&listing_type=' . $post_type . '&pid=$matches[1]';
@@ -2659,7 +2660,7 @@ class GeoDir_Multilingual_WPML {
 				}
 			}
 
-			$sitepress->switch_lang( $backup_lang );
+			$geodir_wpml_tmp_lang = null;
 		}
 
 		return $rules; 
