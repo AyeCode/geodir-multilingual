@@ -5,7 +5,7 @@ Tags: geodirectory, geodirectory multilingual, localization, language, multiling
 Requires at least: 4.9
 Tested up to: 6.4
 Requires PHP: 5.6
-Stable tag: 2.3.5
+Stable tag: 2.3.6
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -31,14 +31,14 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 
 * WordPress 4.9 or later
 * GeoDirectory 2.3.0 or later
-* WPML Multilingual CMS 4.0 or later
-* WPML String Translation 3.0 or later
-* WPML Translation Management 2.2 or later
+* WPML Multilingual CMS 4.5 or later
+* WPML String Translation 3.2 or later
+* WPML Translation Management 2.9 or later
 * WPML Media 2.1 or later
 
 == Changelog ==
 
-= 2.3.6 - TBD =
+= 2.3.6 - 2024-03-05 =
 * Admin edit language user setting is not working as expected - FIXED
 
 = 2.3.5 - 2024-02-08 =
