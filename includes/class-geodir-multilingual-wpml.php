@@ -126,6 +126,15 @@ class GeoDir_Multilingual_WPML {
 		add_filter( 'geodir_save_post_temp_data',  array( __CLASS__, 'save_post_temp_data' ), 1, 3 );
 		
 		add_action( 'template_redirect',  array( __CLASS__, 'on_template_redirect' ), 99 );
+
+		// GetPaid
+		add_filter( 'wpinv_is_success_page', array( __CLASS__, 'getpaid_is_success_page' ), 10, 1 );
+		add_filter( 'wpinv_is_invoice_history_page', array( __CLASS__, 'getpaid_is_invoice_history_page' ), 10, 1 );
+		add_filter( 'wpinv_is_subscriptions_history_page', array( __CLASS__, 'getpaid_is_subscriptions_history_page' ), 10, 1 );
+
+		// Woo
+		add_filter( 'geodir_pricing_wc_cart_product_id', array( __CLASS__, 'pricing_wc_cart_product_id' ), 20, 5 );
+		add_filter( 'geodir_pricing_wc_get_package_id', array( __CLASS__, 'pricing_wc_get_package_id' ), 20, 2 );
 	}
 
 	public static function get_default_language() {
@@ -3253,5 +3262,103 @@ class GeoDir_Multilingual_WPML {
 		}
 
 		return $preview_link;
+	}
+
+	/**
+	 * @since 2.3.7
+	 */
+	public static function getpaid_is_success_page( $check ) {
+		if ( ! $check ) {
+			$page_id = wpinv_get_option( 'success_page', false );
+
+			if ( empty( $page_id ) ) {
+				return $check;
+			}
+
+			$_page_id = self::get_object_id( $page_id, 'page', true );
+
+			if ( ! empty( $_page_id ) && $_page_id != $page_id && is_page( $_page_id ) ) {
+				$check = true;
+			}
+		}
+
+		return $check;
+	}
+
+	/**
+	 * @since 2.3.7
+	 */
+	public static function getpaid_is_invoice_history_page( $check ) {
+		if ( ! $check ) {
+			$page_id = wpinv_get_option( 'invoice_history_page', false );
+
+			if ( empty( $page_id ) ) {
+				return $check;
+			}
+
+			$_page_id = self::get_object_id( $page_id, 'page', true );
+
+			if ( ! empty( $_page_id ) && $_page_id != $page_id && is_page( $_page_id ) ) {
+				$check = true;
+			}
+		}
+
+		return $check;
+	}
+
+	/**
+	 * @since 2.3.7
+	 */
+	public static function getpaid_is_subscriptions_history_page( $check ) {
+		if ( ! $check ) {
+			$page_id = wpinv_get_option( 'invoice_subscription_page', false );
+
+			if ( empty( $page_id ) ) {
+				return $check;
+			}
+
+			$_page_id = self::get_object_id( $page_id, 'page', true );
+
+			if ( ! empty( $_page_id ) && $_page_id != $page_id && is_page( $_page_id ) ) {
+				$check = true;
+			}
+		}
+
+		return $check;
+	}
+
+	public static function pricing_wc_cart_product_id( $product_id, $task, $post_id, $package_id, $post_data ) {
+		return self::get_object_id( $product_id, get_post_type( $product_id ), true );
+	}
+
+	/**
+	 * @since 2.3.7
+	 */
+	public static function pricing_wc_get_package_id( $package_id, $product_id ) {
+		if ( empty( $package_id ) ) {
+			$element_ids = self::get_element_ids( $product_id, 'post_' . get_post_type( $product_id ) );
+
+			if ( ! empty( $element_ids ) ) {
+				remove_filter( 'geodir_pricing_wc_get_package_id', array( __CLASS__, 'pricing_wc_get_package_id' ), 20, 2 );
+
+				foreach ( $element_ids as $element_id ) {
+					if ( ! empty( $element_id ) && $element_id != $product_id ) {
+						// Delete cache
+						geodir_cache_delete( 'geodir_pricing_wc_product_package_id-' . $element_id, 'geodir_pricing_wc' );
+
+						$_package_id = geodir_pricing_get_package_id( $element_id );
+
+						if ( ! empty( $_package_id ) ) {
+							$package_id = $_package_id;
+							break;
+						}
+					}
+				}
+
+				add_filter( 'geodir_pricing_wc_get_package_id', array( __CLASS__, 'pricing_wc_get_package_id' ), 20, 2 );
+			}
+		}
+
+		return $package_id;
 	}
 }

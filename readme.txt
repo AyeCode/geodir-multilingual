@@ -3,7 +3,7 @@ Contributors: stiofansisland, paoltaia, ayecode
 Donate link: https://www.ko-fi.com/stiofan
 Tags: geodirectory, geodirectory multilingual, localization, language, multilingual, translation, WPML
 Requires at least: 4.9
-Tested up to: 6.4
+Tested up to: 6.5
 Requires PHP: 5.6
 Stable tag: 2.3.6
 License: GPLv3
@@ -37,6 +37,9 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 * WPML Media 2.1 or later
 
 == Changelog ==
+
+= 2.3.7 - TBD =
+* Woo translated package product don't published on order completed - FIXED
 
 = 2.3.6 - 2024-03-05 =
 * Admin edit language user setting is not working as expected - FIXED
