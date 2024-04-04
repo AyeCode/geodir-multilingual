@@ -5,7 +5,7 @@ Tags: geodirectory, geodirectory multilingual, localization, language, multiling
 Requires at least: 4.9
 Tested up to: 6.5
 Requires PHP: 5.6
-Stable tag: 2.3.6
+Stable tag: 2.3.7
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -38,7 +38,7 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 
 == Changelog ==
 
-= 2.3.7 - TBD =
+= 2.3.7 - 2024-04-04 =
 * Woo translated package product don't published on order completed - FIXED
 
 = 2.3.6 - 2024-03-05 =
