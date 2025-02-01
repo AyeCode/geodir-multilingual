@@ -102,13 +102,7 @@ final class GeoDir_Multilingual {
 	 */
 	public function load_textdomain() {
 		// Determines the current locale.
-		if ( function_exists( 'determine_locale' ) ) {
-			$locale = determine_locale();
-		} else if ( function_exists( 'get_user_locale' ) ) {
-			$locale = get_user_locale();
-		} else {
-			$locale = get_locale();
-		}
+		$locale = determine_locale();
 
 		/**
 		 * Filter the plugin locale.
@@ -118,7 +112,7 @@ final class GeoDir_Multilingual {
 		 */
 		$locale = apply_filters( 'plugin_locale', $locale, 'geodir-multilingual' );
 
-		unload_textdomain( 'geodir-multilingual' );
+		unload_textdomain( 'geodir-multilingual', true );
 		load_textdomain( 'geodir-multilingual', WP_LANG_DIR . '/geodir-multilingual/geodir-multilingual-' . $locale . '.mo' );
 		load_plugin_textdomain( 'geodir-multilingual', false, basename( dirname( GEODIR_MULTILINGUAL_PLUGIN_FILE ) ) . '/languages/' );
 	}

@@ -2,8 +2,8 @@
 Contributors: stiofansisland, paoltaia, ayecode
 Donate link: https://www.ko-fi.com/stiofan
 Tags: geodirectory, geodirectory multilingual, localization, language, multilingual, translation, WPML
-Requires at least: 4.9
-Tested up to: 6.5
+Requires at least: 5.0
+Tested up to: 6.7
 Requires PHP: 5.6
 Stable tag: 2.3.7
 License: GPLv3
@@ -13,7 +13,7 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 
 == Description ==
 
-Allows running your directory fully multilingual with GeoDirectory and WPML.
+The plugin allows building your directory fully multilingual with [GeoDirectory](https://wordpress.org/plugins/geodirectory/) & [WPML](http://wpml.org/).
 
 = Key Features =
 
@@ -29,14 +29,27 @@ Allows running your directory fully multilingual with GeoDirectory and WPML.
 
 = Minimum Requirements =
 
-* WordPress 4.9 or later
-* GeoDirectory 2.3.0 or later
+* WordPress 5.0 or later
+* GeoDirectory 2.3 or later - https://wordpress.org/plugins/geodirectory/
+* WPML 4.5 or later - https://wpml.org/
+
+GeoDirectory Multilingual supports all three WPML versions (Multilingual Blog, Multilingual CMS & Multilingual Agency).
+
+= With Multilingual Blog =
+Multilingual Blog is WPML basic version that allows only basic translations.
+
+= With Multilingual CMS or Multilingual Agency =
+Multilingual CMS or Multilingual Agency are WPML premium versions that allows advance translations features.
+
+Following WPML addons are supported with WPML premium version.
 * WPML Multilingual CMS 4.5 or later
-* WPML String Translation 3.2 or later
-* WPML Translation Management 2.9 or later
-* WPML Media 2.1 or later
+* WPML String Translation 3.2 or later (required for string translations)
+* WPML Media Translation 2.5 or later (required for media translations)
 
 == Changelog ==
+
+= 2.3.8 - TBD =
+* WordPress 6.7 compatibility check - CHANGED
 
 = 2.3.7 - 2024-04-04 =
 * Woo translated package product don't published on order completed - FIXED
