@@ -12,12 +12,13 @@
  * Plugin URI:        https://wpgeodirectory.com/downloads/wpml-multilingual/
  * Description:       Allows running your directory fully multilingual with GeoDirectory and WPML.
  * Version:           2.3.7
- * Requires at least: 4.9
+ * Requires at least: 5.0
  * Requires PHP:      5.6
  * Author:            AyeCode Ltd
  * Author URI:        https://ayecode.io
  * License:           GPLv3
  * License URI:       http://www.gnu.org/licenses/gpl-3.0.html
+ * Requires Plugins:  geodirectory
  * Text Domain:       geodir-multilingual
  * Domain Path:       /languages
  * Update URL:        https://github.com/AyeCode/geodir-multilingual/
