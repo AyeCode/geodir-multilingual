@@ -5,7 +5,7 @@ Tags: geodirectory, geodirectory multilingual, localization, language, multiling
 Requires at least: 5.0
 Tested up to: 6.7
 Requires PHP: 5.6
-Stable tag: 2.3.7
+Stable tag: 2.3.8
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -48,7 +48,7 @@ Following WPML addons are supported with WPML premium version.
 
 == Changelog ==
 
-= 2.3.8 - TBD =
+= 2.3.8 - 2025-02-05 =
 * WordPress 6.7 compatibility check - CHANGED
 
 = 2.3.7 - 2024-04-04 =
