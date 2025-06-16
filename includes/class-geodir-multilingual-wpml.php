@@ -97,6 +97,8 @@ class GeoDir_Multilingual_WPML {
 		add_action( 'geodir_bp_favorite_count_where', array( __CLASS__, 'geodir_bp_favorite_count_where' ), 10, 2 );
 		add_action( 'geodir_bp_reviews_count_join', array( __CLASS__, 'geodir_bp_reviews_count_join' ), 10, 2 );
 		add_action( 'geodir_bp_reviews_count_where', array( __CLASS__, 'geodir_bp_reviews_count_where' ), 10, 2 );
+		add_action( 'geodir_cp_search_posts_query_join', array( __CLASS__, 'cp_search_posts_query_join' ), 10, 4 );
+		add_action( 'geodir_cp_search_posts_query_where', array( __CLASS__, 'cp_search_posts_query_where' ), 10, 4 );
 
 		if ( $sitepress->get_setting( 'sync_comments_on_duplicates' ) ) {
 			add_action( 'comment_post', array( __CLASS__, 'sync_comment' ), 100, 1 );
@@ -2446,6 +2448,38 @@ class GeoDir_Multilingual_WPML {
     public static function geodir_bp_reviews_count_where( $where, $post_type ) {
         return self::geodir_bp_listings_count_where( $where, $post_type );
     }
+
+	public static function cp_search_posts_query_join( $join, $search, $post_type, $custom_field ) {
+		global $wpdb;
+
+		if ( $post_type ) {
+			$wpml_join = self::filter_single_type_join( '', $post_type );
+			$wpml_join = str_replace( array( " {$wpdb->posts}.", "\t{$wpdb->posts}." ), array( " p.", "\tp." ), $wpml_join );
+
+			if ( $wpml_join ) {
+				$join .= $wpml_join;
+			}
+		}
+
+		return $join;
+	}
+
+	public static function cp_search_posts_query_where( $where, $search, $post_type, $custom_field ) {
+		global $wpdb;
+
+		if ( $post_type ) {
+			$wpml_where = self::filter_single_type_where( '', $post_type );
+
+			if ( $wpml_where ) {
+				$wpml_where = str_replace( array( " {$wpdb->posts} p", "\t{$wpdb->posts} p", " p.", "\tp." ), array( " {$wpdb->posts} wpml_p", "\t{$wpdb->posts} wpml_p", " wpml_p.", "\twpml_p." ), $wpml_where );
+				$wpml_where = str_replace( array( " {$wpdb->posts}.", "\t{$wpdb->posts}." ), array( " p.", "\tp." ), $wpml_where );
+
+				$where .= $wpml_where;
+			}
+		}
+
+		return $where;
+	}
 
 	public static function allow_invoice_for_listing( $allow, $post_ID ) {
 		if ( $allow && is_post_type_translated( get_post_type( $post_ID ) ) && get_post_meta( $post_ID, '_icl_lang_duplicate_of', true ) ) {

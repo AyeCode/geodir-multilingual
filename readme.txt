@@ -48,6 +48,9 @@ Following WPML addons are supported with WPML premium version.
 
 == Changelog ==
 
+= 2.3.9 - 2025-06-TBD =
+* Link posts dropdown shows posts from all languages - FIXED
+
 = 2.3.8 - 2025-02-05 =
 * WordPress 6.7 compatibility check - CHANGED
 
