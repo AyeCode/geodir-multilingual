@@ -3,9 +3,9 @@ Contributors: stiofansisland, paoltaia, ayecode
 Donate link: https://www.ko-fi.com/stiofan
 Tags: geodirectory, geodirectory multilingual, localization, language, multilingual, translation, WPML
 Requires at least: 5.0
-Tested up to: 6.7
+Tested up to: 6.8
 Requires PHP: 5.6
-Stable tag: 2.3.8
+Stable tag: 2.3.9
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -48,7 +48,7 @@ Following WPML addons are supported with WPML premium version.
 
 == Changelog ==
 
-= 2.3.9 - 2025-06-TBD =
+= 2.3.9 - 2025-06-19 =
 * Link posts dropdown shows posts from all languages - FIXED
 
 = 2.3.8 - 2025-02-05 =
