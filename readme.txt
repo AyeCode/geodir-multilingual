@@ -5,7 +5,7 @@ Tags: geodirectory, geodirectory multilingual, localization, language, multiling
 Requires at least: 5.0
 Tested up to: 6.8
 Requires PHP: 5.6
-Stable tag: 2.3.9
+Stable tag: 2.3.10
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -48,7 +48,7 @@ Following WPML addons are supported with WPML premium version.
 
 == Changelog ==
 
-= 2.3.10 - 2025-11-TBD =
+= 2.3.10 - 2025-11-20 =
 * Directory theme footer recent posts shows items from all languages - FIXED
 
 = 2.3.9 - 2025-06-19 =
