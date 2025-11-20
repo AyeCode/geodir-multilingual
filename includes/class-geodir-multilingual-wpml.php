@@ -76,6 +76,8 @@ class GeoDir_Multilingual_WPML {
 		add_filter( 'geodir_ninja_form_widget_action_text', array( __CLASS__, 'register_dynamic_string' ), 99, 3 );
 		add_filter( 'geodir_claim_widget_button_text', array( __CLASS__, 'register_dynamic_string' ), 99, 3 );
 
+		add_action( 'geodir_before_pre_get_posts', array( __CLASS__, 'before_pre_get_posts' ), 10, 1 );
+		add_action( 'pre_get_posts', array( __CLASS__, 'pre_get_posts' ), 11, 1 );
 		add_action( 'sanitize_comment_cookies', array( __CLASS__, 'ajax_set_guest_lang' ), 1 );
 		add_action( 'icl_make_duplicate', array( __CLASS__, 'make_duplicate' ), 11, 4 );
 		add_action( 'geodir_language_file_add_string', array( __CLASS__, 'register_string' ), 10, 1 );
@@ -1666,7 +1668,11 @@ class GeoDir_Multilingual_WPML {
 			$post_type = $geodir_post_type;
 		}
 
-		if ( $post_type ) {
+		if ( ! empty( $query ) && ! empty( $query->query ) && ! empty( $query->query['post_type'] ) && is_scalar( $query->query['post_type'] ) ) {
+			$post_type = $query->query['post_type'];
+		}
+
+		if ( $post_type && geodir_is_gd_post_type( $post_type ) ) {
 			$join = self::filter_single_type_join( $join, $post_type );
 		}
 
@@ -1682,7 +1688,11 @@ class GeoDir_Multilingual_WPML {
 			$post_type = $geodir_post_type;
 		}
 
-		if ( $post_type ) {
+		if ( ! empty( $query ) && ! empty( $query->query ) && ! empty( $query->query['post_type'] ) && is_scalar( $query->query['post_type'] ) ) {
+			$post_type = $query->query['post_type'];
+		}
+
+		if ( $post_type && geodir_is_gd_post_type( $post_type ) ) {
 			$where = self::filter_single_type_where( $where, $post_type );
 
 			// Translated tax query.
@@ -3394,5 +3404,29 @@ class GeoDir_Multilingual_WPML {
 		}
 
 		return $package_id;
+	}
+
+	public static function before_pre_get_posts( $query ) {
+		global $wpml_query_filter, $gdml_pre_get_posts;
+
+		if ( ! empty( $wpml_query_filter ) && has_filter( 'posts_join', array( $wpml_query_filter, 'posts_join_filter' ) ) ) {
+			$gdml_pre_get_posts = true;
+		}
+	}
+
+	public static function pre_get_posts( $query ) {
+		global $wpml_query_filter, $gdml_pre_get_posts;
+
+		if ( ! $gdml_pre_get_posts ) {
+			return;
+		}
+
+		if ( ! GeoDir_Query::is_gd_main_query( $query ) ) {
+			$gdml_pre_get_posts = false;
+
+			if ( ! empty( $wpml_query_filter ) && ! has_filter( 'posts_join', array( $wpml_query_filter, 'posts_join_filter' ) ) ) {
+				wpml_load_query_filter( true );
+			}
+		}
 	}
 }

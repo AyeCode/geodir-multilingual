@@ -48,6 +48,9 @@ Following WPML addons are supported with WPML premium version.
 
 == Changelog ==
 
+= 2.3.10 - 2025-11-TBD =
+* Directory theme footer recent posts shows items from all languages - FIXED
+
 = 2.3.9 - 2025-06-19 =
 * Link posts dropdown shows posts from all languages - FIXED
 
