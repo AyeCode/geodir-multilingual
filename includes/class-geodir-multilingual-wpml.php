@@ -3421,7 +3421,13 @@ class GeoDir_Multilingual_WPML {
 			return;
 		}
 
-		if ( ! GeoDir_Query::is_gd_main_query( $query ) ) {
+		$post_type = ! empty( $query->query_vars['post_type'] ) ? $query->query_vars['post_type'] : array();
+
+		if ( ! empty( $post_type ) && ! is_array( $post_type ) ) {
+			$post_type = (array) $post_type;
+		}
+
+		if ( ! GeoDir_Query::is_gd_main_query( $query ) && ! empty( $post_type ) && ! in_array( 'fusion_tb_layout', $post_type ) ) {
 			$gdml_pre_get_posts = false;
 
 			if ( ! empty( $wpml_query_filter ) && ! has_filter( 'posts_join', array( $wpml_query_filter, 'posts_join_filter' ) ) ) {

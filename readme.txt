@@ -3,9 +3,9 @@ Contributors: stiofansisland, paoltaia, ayecode
 Donate link: https://www.ko-fi.com/stiofan
 Tags: geodirectory, geodirectory multilingual, localization, language, multilingual, translation, WPML
 Requires at least: 5.0
-Tested up to: 6.8
+Tested up to: 6.9
 Requires PHP: 5.6
-Stable tag: 2.3.10
+Stable tag: 2.3.11
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -47,6 +47,9 @@ Following WPML addons are supported with WPML premium version.
 * WPML Media Translation 2.5 or later (required for media translations)
 
 == Changelog ==
+
+= 2.3.11 - 2026-01-22 =
+* Fix conflicts with fusion builder template query - FIXED
 
 = 2.3.10 - 2025-11-20 =
 * Directory theme footer recent posts shows items from all languages - FIXED
