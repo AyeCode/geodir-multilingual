@@ -1,0 +1,25 @@
+# Copy of this file goes into each add-on repo as .github/workflows/release.yml with SLUG replaced.
+name: Release
+
+on:
+  push:
+    tags:
+      - "*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to release again
+        required: true
+      force:
+        description: Force (roll back to an older version, or change the plugin folder)
+        type: boolean
+        default: false
+
+jobs:
+  release:
+    uses: AyeCode/release-workflow/.github/workflows/release.yml@main
+    with:
+      slug: geodir-multilingual
+      tag: ${{ github.event.inputs.tag || github.ref_name }}
+      force: ${{ github.event.inputs.force == 'true' }}
+    secrets: inherit
